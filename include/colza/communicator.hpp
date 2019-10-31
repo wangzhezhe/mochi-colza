@@ -3,6 +3,9 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <vector>
+#include <string>
+#include <mpi.h>
 
 namespace colza {
 
@@ -20,6 +23,7 @@ class communicator {
     communicator(communicator&&) = default;
     communicator& operator=(const communicator&) = delete;
     communicator& operator=(communicator&&) = default;
+    ~communicator() = default;
 
     size_t size() const;
     size_t rank() const;
@@ -49,7 +53,10 @@ class communicator {
 
     private:
 
-    communicator();
+    static communicator* create(controller* owner);
+
+    communicator(controller* owner)
+    : m_controller(owner) {}
 
     controller* m_controller;
 
