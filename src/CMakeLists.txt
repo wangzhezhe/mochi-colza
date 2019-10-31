@@ -1,5 +1,5 @@
 # list of source files
-file(GLOB colza-src *.cpp)
+file(GLOB colza-src **/*.cpp)
 
 # load package helper for generating cmake CONFIG packages
 include (CMakePackageConfigHelpers)
