@@ -15,6 +15,7 @@ enable_testing ()
 option(ENABLE_TESTS    "Build tests. May require CppUnit_ROOT" OFF)
 option(ENABLE_EXAMPLES "Build examples" OFF)
 option(ENABLE_MPI      "Build with MPI support" ON)
+option(ENABLE_PMIX     "Build with PMIx support" OFF)
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
@@ -38,6 +39,10 @@ if(ENABLE_MPI)
     find_package(MPI REQUIRED)
 endif(ENABLE_MPI)
 
+if(ENABLE_PMIX)
+    find_package(PMIx REQUIRED)
+endif(ENABLE_PMIX)
+
 find_package (CppUnit)
 if (CPPUNIT_FOUND)
     message(STATUS "CppUnit found, unit tests will be compiled")
@@ -47,8 +52,6 @@ else (CPPUNIT_FOUND)
     message(STATUS "CppUnit not found, unit tests will not be compiled")
 endif (CPPUNIT_FOUND)
 
-
-# packages we depend on
 include (xpkg-import)
 find_package (thallium REQUIRED)
 xpkg_import_module (ssg REQUIRED ssg)
