@@ -1,0 +1,7 @@
+#ifndef __COLZA_CONFIG_HPP
+#define __COLZA_CONFIG_HPP
+
+#cmakedefine COLZA_HAS_MPI
+#cmakedefine COLZA_HAS_PMIX
+
+#endif

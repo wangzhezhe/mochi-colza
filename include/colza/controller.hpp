@@ -3,9 +3,15 @@
 
 #include <string>
 #include <vector>
-#include <mpi.h>
 #include <thallium.hpp>
 #include <ssg.h>
+#include <colza/config.hpp>
+#ifdef COLZA_HAS_MPI
+#include <ssg-mpi.h>
+#endif
+#ifdef COLZA_HAS_PMIX
+#include <ssg-pmix.h>
+#endif
 
 namespace colza {
 
@@ -19,10 +25,15 @@ class controller : public tl::provider<controller> {
 
     static std::string default_group_name;
 
-    static controller* create(tl::engine* engine, MPI_Comm comm, uint16_t provider_id=0);
+
     static controller* create(tl::engine* engine, const std::string& filename, uint16_t provider_id=0);
     static controller* create(tl::engine* engine, const std::vector<std::string>& addresses, uint16_t provider_id=0);
-
+#ifdef COLZA_HAS_MPI
+    static controller* create(tl::engine* engine, MPI_Comm comm, uint16_t provider_id=0);
+#endif
+#ifdef COLZA_HAS_PMIX
+    static controller* create(tl::engine* engine, pmix_proc_t proc, uint16_t provider_id=0);
+#endif
     ~controller();
 
     controller(const controller&) = delete;

@@ -2,7 +2,6 @@
 #include "colza/communicator.hpp"
 
 #include <string>
-#include <ssg-mpi.h>
 
 namespace colza {
 
@@ -12,15 +11,6 @@ controller::controller(tl::engine* engine, ssg_group_id_t gid, uint16_t provider
 : tl::provider<controller>(*engine, provider_id)
 , m_ssg_group_id(gid)
 , m_root_comm(communicator::create(this)) {}
-
-controller* controller::create(tl::engine* engine, MPI_Comm comm, uint16_t provider_id) {
-    std::string group_name(default_group_name);
-    group_name += std::to_string(provider_id);
-    ssg_group_config_t config = SSG_GROUP_CONFIG_INITIALIZER;
-    ssg_group_id_t gid = ssg_group_create_mpi(engine->get_margo_instance(),
-            group_name.c_str(), comm, &config, nullptr, nullptr);
-    return new controller(engine, gid, provider_id);
-}
 
 controller* controller::create(tl::engine* engine, const std::vector<std::string>& addresses, uint16_t provider_id) {
     std::string group_name(default_group_name);
@@ -45,4 +35,25 @@ controller* controller::create(tl::engine* engine, const std::string& filename, 
     return new controller(engine, gid, provider_id);
 }
 
+#ifdef COLZA_HAS_MPI
+controller* controller::create(tl::engine* engine, MPI_Comm comm, uint16_t provider_id) {
+    std::string group_name(default_group_name);
+    group_name += std::to_string(provider_id);
+    ssg_group_config_t config = SSG_GROUP_CONFIG_INITIALIZER;
+    ssg_group_id_t gid = ssg_group_create_mpi(engine->get_margo_instance(),
+            group_name.c_str(), comm, &config, nullptr, nullptr);
+    return new controller(engine, gid, provider_id);
+}
+#endif
+
+#ifdef COLZA_HAS_PMIX
+controller* controller::create(tl::engine* engine, pmix_proc_t proc, uint16_t provider_id) {
+    std::string group_name(default_group_name);
+    group_name += std::to_string(provider_id);
+    ssg_group_config_t config = SSG_GROUP_CONFIG_INITIALIZER;
+    ssg_group_id_t gid = ssg_group_create_pmix(engine->get_margo_instance(),
+            group_name.c_str(), proc, &config, nullptr, nullptr);
+    return new controller(engine, gid, provider_id);
+}
+#endif
 }

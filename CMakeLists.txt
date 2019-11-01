@@ -37,10 +37,16 @@ set (BUILD_SHARED_LIBS "OFF" CACHE BOOL "Build a shared library")
 
 if(ENABLE_MPI)
     find_package(MPI REQUIRED)
+    set(COLZA_HAS_MPI 1)
+else(ENABLE_MPI)
+    set(COLZA_HAS_MPI 0)
 endif(ENABLE_MPI)
 
 if(ENABLE_PMIX)
     find_package(PMIx REQUIRED)
+    set(COLZA_HAS_PMIX 1)
+else(ENABLE_PMIX)
+    set(COLZA_HAS_PMIX 0)
 endif(ENABLE_PMIX)
 
 find_package (CppUnit)
@@ -55,6 +61,12 @@ endif (CPPUNIT_FOUND)
 include (xpkg-import)
 find_package (thallium REQUIRED)
 xpkg_import_module (ssg REQUIRED ssg)
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/colza/config.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/include/colza/config.hpp
+)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 add_subdirectory (src)
 if(CPPUNIT_FOUND AND ENABLE_TESTS AND ENABLE_MPI)

@@ -61,5 +61,10 @@ install (FILES "${CMAKE_CURRENT_BINARY_DIR}/colza-config.cmake"
 install (DIRECTORY ../include/colza
          DESTINATION include
          FILES_MATCHING PATTERN "*.h")
+install (DIRECTORY ../include/colza
+         DESTINATION include
+         FILES_MATCHING PATTERN "*.hpp")
 install (FILES "${CMAKE_CURRENT_BINARY_DIR}/colza.pc"
          DESTINATION "lib/pkgconfig/")
+install (FILES "${CMAKE_CURRENT_BINARY_DIR}/include/colza/config.hpp"
+         DESTINATION include/colza)
