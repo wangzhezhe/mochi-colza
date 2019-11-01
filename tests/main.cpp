@@ -15,8 +15,10 @@ int main(int argc, char* argv[])
 {
     MPI_Init(&argc, &argv);
     engine = new tl::engine("ofi+tcp", THALLIUM_SERVER_MODE, true, -1);
-    margo_instance_id mid = engine->get_margo_instance();
-    ssg_init(mid);
+    ssg_init();
+    // Sleeping is needed to make sure other processes have
+    // initialized SSG and are ready to respond
+    tl::thread::sleep(*engine, 1000);
 
     // Get the top level suite from the registry
     CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
@@ -30,6 +32,8 @@ int main(int argc, char* argv[])
     // Run the tests.
     bool wasSucessful = runner.run();
 
+    // Sleeping is needed to make sure all processes correctly shutdown SSG
+    tl::thread::sleep(*engine, 1000);
     ssg_finalize();
     engine->finalize();
     delete engine;
