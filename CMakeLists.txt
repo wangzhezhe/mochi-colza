@@ -14,6 +14,7 @@ enable_testing ()
 
 option(ENABLE_TESTS    "Build tests. May require CppUnit_ROOT" OFF)
 option(ENABLE_EXAMPLES "Build examples" OFF)
+option(ENABLE_MPI      "Build with MPI support" ON)
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
@@ -33,6 +34,10 @@ endif ()
 set (CMAKE_PREFIX_PATH "" CACHE STRING "External dependencies path")
 set (BUILD_SHARED_LIBS "OFF" CACHE BOOL "Build a shared library")
 
+if(ENABLE_MPI)
+    find_package(MPI REQUIRED)
+endif(ENABLE_MPI)
+
 find_package (CppUnit)
 if (CPPUNIT_FOUND)
     message(STATUS "CppUnit found, unit tests will be compiled")
@@ -49,10 +54,10 @@ find_package (thallium REQUIRED)
 xpkg_import_module (ssg REQUIRED ssg)
 
 add_subdirectory (src)
-if(CPPUNIT_FOUND AND ENABLE_TESTS)
-    message(STATUS "Unit tests are enabled, will be built")
+if(CPPUNIT_FOUND AND ENABLE_TESTS AND ENABLE_MPI)
+    message(STATUS "Unit tests are enabled, MPI and CppUnit are available, tests will be built")
     add_subdirectory (tests)
-endif(CPPUNIT_FOUND AND ENABLE_TESTS)
+endif(CPPUNIT_FOUND AND ENABLE_TESTS AND ENABLE_MPI)
 if(${ENABLE_EXAMPLES})
   add_subdirectory (examples)
 endif(${ENABLE_EXAMPLES})
