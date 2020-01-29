@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <mpi.h>
+#include <ssg.h>
 
 namespace colza {
 
@@ -20,9 +21,9 @@ class communicator {
     public:
 
     communicator(const communicator&) = delete;
-    communicator(communicator&&) = default;
+    communicator(communicator&&) = delete;
     communicator& operator=(const communicator&) = delete;
-    communicator& operator=(communicator&&) = default;
+    communicator& operator=(communicator&&) = delete;
     ~communicator() = default;
 
     size_t size() const;
@@ -53,12 +54,16 @@ class communicator {
 
     private:
 
-    static communicator* create(controller* owner);
-
-    communicator(controller* owner)
-    : m_controller(owner) {}
+    communicator(controller* owner, int size, int rank, std::vector<ssg_member_id_t>&& members)
+    : m_controller(owner)
+    , m_size(size)
+    , m_rank(rank) 
+    , m_members(std::move(members)) {}
 
     controller* m_controller;
+    int         m_size;
+    int         m_rank;
+    std::vector<ssg_member_id_t> m_members;
 
 };
 

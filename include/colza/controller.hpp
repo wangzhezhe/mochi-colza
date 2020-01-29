@@ -19,41 +19,140 @@ namespace tl = thallium;
 
 class communicator;
 
+/**
+ * @brief The colza::controller class is a Thallium provider that
+ * is responsible for defining the required RPCs for communications,
+ * and to queue received requests from colza::communicator instances.
+ */
 class controller : public tl::provider<controller> {
 
     public:
 
-    static std::string default_group_name;
+    static std::string default_ssg_group_name;        //!< Default SSG group name
+    static ssg_group_config default_ssg_group_config; //!< Default SSG configuration
 
+    /**
+     * @brief Creates a controller belonging to a group with only itself as a member.
+     * If the user does not delete the created controller, it will be automatically
+     * deleted upon finalizing the engine.
+     *
+     * @param engine Thallium engine.
+     * @param provider_id Provider id.
+     *
+     * @return a pointer to a controller.
+     */
+    static controller* create(tl::engine* engine, uint16_t provider_id=0);
 
+    /**
+     * @brief Creates a controller and makes it join a group defined in the provided file.
+     * If the user does not delete the created controller, it will be automatically
+     * deleted upon finalizing the engine.
+     *
+     * @param engine Thallium engine.
+     * @param filename SSG group file.
+     * @param provider_id Provider id.
+     *
+     * @return a pointer to a controller.
+     */
     static controller* create(tl::engine* engine, const std::string& filename, uint16_t provider_id=0);
+
+    /**
+     * @brief Creates a controller and makes it join a group formed of the provided array
+     * of addresses. All the processes in this array must be creating a controller in the
+     * same way. If the user does not delete the created controller, it will be automatically
+     * deleted upon finalizing the engine.
+     *
+     * @param engine Thallium engine.
+     * @param addresses array of addresses of all the members, including the caller.
+     * @param provider_id Provider id.
+     *
+     * @return a pointer to a controller.
+     */
     static controller* create(tl::engine* engine, const std::vector<std::string>& addresses, uint16_t provider_id=0);
+
 #ifdef COLZA_HAS_MPI
+    /**
+     * @brief Creates a controller and makes it join a group formed of all the processes
+     * in the provided MPI communicator. All the other processes must call this function
+     * as well. If the user does not delete the created controller, it will be automatically
+     * deleted upon finalizing the engine.
+     *
+     * This function requires SSG to have been compiled with MPI support.
+     *
+     * @param engine Thallium engine.
+     * @param comm MPI communicator to bootstrap from.
+     * @param provider_id Provider id.
+     *
+     * @return a pointer to a controller.
+     */
     static controller* create(tl::engine* engine, MPI_Comm comm, uint16_t provider_id=0);
 #endif
+
 #ifdef COLZA_HAS_PMIX
+    /**
+     * @brief Creates a controller by bootstrapping from PMIx. All other processes
+     * involved in the group should call this function. If the user does not delete
+     * the created controller, it will be automatically deleted upon finalizing
+     * the engine.
+     *
+     * This function requires SSG to have been compiled with PMIx support.
+     *
+     * @param engine Thallium engine.
+     * @param proc PMIx proc object.
+     * @param provider_id Provider id.
+     *
+     * @return a pointer to a controller.
+     */
     static controller* create(tl::engine* engine, pmix_proc_t proc, uint16_t provider_id=0);
 #endif
+    
+    /**
+     * @brief Destructor.
+     */
     ~controller();
 
+    /**
+     * @brief Copy constructor is deleted.
+     */
     controller(const controller&) = delete;
 
-    controller(controller&&) = default;
+    /**
+     * @brief Move constructor is deleted.
+     */
+    controller(controller&&) = delete;
 
+    /**
+     * @brief Copy-assignment is deleted.
+     */
     controller& operator=(const controller&) = delete;
 
+    /**
+     * @brief Move-assignment is deleted.
+     */
     controller& operator=(controller&&) = default;
 
-    communicator* get_root_communicator() {
-        return m_root_comm;
-    }
+    /**
+     * @brief Gets a communicator gathering all the members of the SSG group
+     * managed by this controller. This communicator can be seen as the
+     * equivalent of MPI_COMM_WORLD.
+     *
+     * @return a pointer to a communicator.
+     */
+    std::shared_ptr<communicator> build_world_communicator() const;
 
     private:
 
-    controller(tl::engine* engine, ssg_group_id_t gid, uint16_t provider_id=0);
+    controller(tl::engine* engine, uint16_t provider_id=0);
+
+    void init(ssg_group_id_t gid);
+
+    void on_member_joined(ssg_member_id_t member_id);
+    void on_member_died(ssg_member_id_t member_id);
+    void on_member_left(ssg_member_id_t member_id);
+
+    static void group_membership_update(void* uargs, ssg_member_id_t member_id, ssg_member_update_type_t update_type);
 
     ssg_group_id_t m_ssg_group_id = SSG_GROUP_ID_INVALID;
-    communicator* m_root_comm = nullptr;
 };
 
 }

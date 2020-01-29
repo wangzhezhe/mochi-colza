@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
     MPI_Init(&argc, &argv);
     engine = new tl::engine("ofi+tcp", THALLIUM_SERVER_MODE, true, -1);
     ssg_init();
+    engine->push_prefinalize_callback([]() { ssg_finalize(); });
     // Sleeping is needed to make sure other processes have
     // initialized SSG and are ready to respond
     tl::thread::sleep(*engine, 1000);
@@ -34,7 +35,6 @@ int main(int argc, char* argv[])
 
     // Sleeping is needed to make sure all processes correctly shutdown SSG
     tl::thread::sleep(*engine, 1000);
-    ssg_finalize();
     engine->finalize();
     delete engine;
 

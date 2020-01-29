@@ -12,8 +12,8 @@ class SendRecvTest : public CppUnit::TestFixture
     CPPUNIT_TEST( testSendRecv );
     CPPUNIT_TEST_SUITE_END();
 
-    colza::controller*   m_controller = nullptr;
-    colza::communicator* m_comm       = nullptr;
+    colza::controller*                   m_controller = nullptr;
+    std::shared_ptr<colza::communicator> m_comm = nullptr;
 
     public:
 

@@ -9,12 +9,12 @@ extern tl::engine* engine;
 
 void SendRecvTest::setUp() {
     m_controller = colza::controller::create(engine, MPI_COMM_WORLD);
-    m_comm       = m_controller->get_root_communicator();
+    m_comm       = m_controller->build_world_communicator();
 }
 
 void SendRecvTest::tearDown() {
+    m_comm.reset();
     m_controller = nullptr;
-    m_comm = nullptr;
 }
 
 void SendRecvTest::testSendRecv() {
