@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <thallium.hpp>
 #include <ssg.h>
 #include <colza/config.hpp>
@@ -26,6 +27,8 @@ class communicator;
  */
 class controller : public tl::provider<controller> {
 
+    friend class communicator;
+
     public:
 
     static std::string default_ssg_group_name;        //!< Default SSG group name
@@ -38,10 +41,13 @@ class controller : public tl::provider<controller> {
      *
      * @param engine Thallium engine.
      * @param provider_id Provider id.
+     * @param pool Pool to use to execute RPCs.
      *
      * @return a pointer to a controller.
      */
-    static controller* create(tl::engine* engine, uint16_t provider_id=0);
+    static controller* create(tl::engine* engine,
+                              uint16_t provider_id=0,
+                              const tl::pool& pool = tl::pool());
 
     /**
      * @brief Creates a controller and makes it join a group defined in the provided file.
@@ -51,10 +57,14 @@ class controller : public tl::provider<controller> {
      * @param engine Thallium engine.
      * @param filename SSG group file.
      * @param provider_id Provider id.
+     * @param pool Pool to use to execute RPCs.
      *
      * @return a pointer to a controller.
      */
-    static controller* create(tl::engine* engine, const std::string& filename, uint16_t provider_id=0);
+    static controller* create(tl::engine* engine,
+                              const std::string& filename,
+                              uint16_t provider_id=0,
+                              const tl::pool& pool = tl::pool());
 
     /**
      * @brief Creates a controller and makes it join a group formed of the provided array
@@ -65,10 +75,14 @@ class controller : public tl::provider<controller> {
      * @param engine Thallium engine.
      * @param addresses array of addresses of all the members, including the caller.
      * @param provider_id Provider id.
+     * @param pool Pool to use to execute RPCs.
      *
      * @return a pointer to a controller.
      */
-    static controller* create(tl::engine* engine, const std::vector<std::string>& addresses, uint16_t provider_id=0);
+    static controller* create(tl::engine* engine,
+                              const std::vector<std::string>& addresses,
+                              uint16_t provider_id=0,
+                              const tl::pool& pool = tl::pool());
 
 #ifdef COLZA_HAS_MPI
     /**
@@ -82,10 +96,14 @@ class controller : public tl::provider<controller> {
      * @param engine Thallium engine.
      * @param comm MPI communicator to bootstrap from.
      * @param provider_id Provider id.
+     * @param pool Pool to use to execute RPCs.
      *
      * @return a pointer to a controller.
      */
-    static controller* create(tl::engine* engine, MPI_Comm comm, uint16_t provider_id=0);
+    static controller* create(tl::engine* engine,
+                              MPI_Comm comm,
+                              uint16_t provider_id=0,
+                              const tl::pool& pool = tl::pool());
 #endif
 
 #ifdef COLZA_HAS_PMIX
@@ -100,10 +118,14 @@ class controller : public tl::provider<controller> {
      * @param engine Thallium engine.
      * @param proc PMIx proc object.
      * @param provider_id Provider id.
+     * @param pool Pool to use to execute RPCs.
      *
      * @return a pointer to a controller.
      */
-    static controller* create(tl::engine* engine, pmix_proc_t proc, uint16_t provider_id=0);
+    static controller* create(tl::engine* engine,
+                              pmix_proc_t proc,
+                              uint16_t provider_id=0,
+                              const tl::pool& pool = tl::pool());
 #endif
     
     /**
@@ -138,21 +160,39 @@ class controller : public tl::provider<controller> {
      *
      * @return a pointer to a communicator.
      */
-    std::shared_ptr<communicator> build_world_communicator() const;
+    std::shared_ptr<communicator> build_world_communicator();
 
     private:
 
-    controller(tl::engine* engine, uint16_t provider_id=0);
+    controller(tl::engine* engine, uint16_t provider_id=0, const tl::pool& pool=tl::pool());
 
     void init(ssg_group_id_t gid);
-
+    
+    /**
+     * SSG membership update callbacks.
+     */
     void on_member_joined(ssg_member_id_t member_id);
     void on_member_died(ssg_member_id_t member_id);
     void on_member_left(ssg_member_id_t member_id);
-
     static void group_membership_update(void* uargs, ssg_member_id_t member_id, ssg_member_update_type_t update_type);
 
-    ssg_group_id_t m_ssg_group_id = SSG_GROUP_ID_INVALID;
+    /**
+     * @brief RPC handlers executed when a remote process calls send on a communicator.
+     *
+     * @param req Thallium request.
+     * @param comm_id Communicator id.
+     * @param bulk Bulk handle for the remote data.
+     * @param size Size of the remote data.
+     * @param tag Tag.
+     */
+    void on_p2p_transfer(const tl::request& req, uint64_t comm_id, tl::bulk& bulk, size_t size, int32_t source, int32_t tag);
+
+    tl::provider_handle member_id_to_provider_handle(ssg_member_id_t member_id);
+
+    ssg_group_id_t       m_ssg_group_id = SSG_GROUP_ID_INVALID;
+    tl::pool             m_pool;
+    std::unordered_map<uint64_t, std::shared_ptr<communicator>> m_communicators;
+    tl::remote_procedure m_p2p_transfer_rpc;
 };
 
 }

@@ -5,10 +5,14 @@
 #include <cstddef>
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <mpi.h>
 #include <ssg.h>
+#include <thallium.hpp>
 
 namespace colza {
+
+namespace tl = thallium;
 
 class controller;
 class request;
@@ -54,17 +58,30 @@ class communicator {
 
     private:
 
-    communicator(controller* owner, int size, int rank, std::vector<ssg_member_id_t>&& members)
+    communicator(controller* owner, size_t size, size_t rank, std::vector<ssg_member_id_t>&& members)
     : m_controller(owner)
     , m_size(size)
     , m_rank(rank) 
     , m_members(std::move(members)) {}
 
+    int on_p2p_transfer(const tl::endpoint& ep, tl::bulk& remote_bulk, size_t size, int32_t source, int32_t tag);
+
     controller* m_controller;
-    int         m_size;
-    int         m_rank;
+    uint64_t    m_comm_id = 0;
+    size_t      m_size;
+    size_t      m_rank;
     std::vector<ssg_member_id_t> m_members;
 
+    struct p2p_request {
+        tl::bulk*     m_bulk;
+        const tl::endpoint* m_endpoint;
+        size_t        m_size;
+        bool          m_processed = false;
+    };
+
+    std::unordered_map<uint64_t, p2p_request*> m_pending_p2p_requests;
+    tl::mutex                                  m_pending_p2p_requests_mtx;
+    tl::condition_variable                     m_pending_p2p_requests_cv;
 };
 
 }
