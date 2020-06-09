@@ -14,7 +14,7 @@ tl::engine* engine;
 int main(int argc, char* argv[])
 {
     MPI_Init(&argc, &argv);
-    engine = new tl::engine("ofi+tcp", THALLIUM_SERVER_MODE, true, -1);
+    engine = new tl::engine("ofi+tcp", THALLIUM_SERVER_MODE, true, 4);
     ssg_init();
     engine->push_prefinalize_callback([]() { ssg_finalize(); });
     // Sleeping is needed to make sure other processes have
@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     runner.addTest( suite );
 
     // Change the default outputter to a compiler error format outputter
-    runner.setOutputter( new CppUnit::XmlOutputter( &runner.result(), std::cerr ) );
+    //runner.setOutputter( new CppUnit::XmlOutputter( &runner.result(), std::cerr ) );
     // Run the tests.
     bool wasSucessful = runner.run();
 

@@ -8,8 +8,9 @@
 #      -DCMAKE_PREFIX_PATH='/dir1;/dir2;/dir3'
 #
 
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.14)
 project (colza C CXX)
+set (CMAKE_CXX_STANDARD 14)
 enable_testing ()
 
 option(ENABLE_TESTS    "Build tests. May require CppUnit_ROOT" OFF)
