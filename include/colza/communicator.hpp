@@ -9,6 +9,7 @@
 #include <mpi.h>
 #include <ssg.h>
 #include <thallium.hpp>
+#include <colza/tags.hpp>
 
 namespace colza {
 
@@ -39,6 +40,8 @@ class communicator {
     int irecv(void* data, size_t size, int src, int tag, request& req);
     int barrier();
     int ibarrier(request& req);
+    int bcast(void* data, int count, size_t elem_size, int root);
+    int ibcast(void* data, int count, size_t elem_size, int root, request& req);
     int gather(const void *sendBuffer, void *recvBuffer, size_t size, int dest);
     int igather(const void *sendBuffer, void *recvBuffer, size_t size, int dest, request& req);
     int gatherv(const void *sendBuffer, void *recvBuffer, size_t sendLength, size_t* recvLengths, size_t* offsets, int dest);
