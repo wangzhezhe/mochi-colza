@@ -5,7 +5,7 @@
 #include "CppUnitAdditionalMacros.hpp"
 #include "colza/request.hpp"
 
-CPPUNIT_TEST_SUITE_REGISTRATION(CollectiveTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(BcastTest);
 
 namespace tl = thallium;
 
@@ -13,19 +13,18 @@ namespace tl = thallium;
 extern colza::controller* m_controller;
 extern std::shared_ptr<colza::communicator> m_comm;
 
-void CollectiveTest::setUp() {}
+void BcastTest::setUp() {}
 
-void CollectiveTest::tearDown() {}
+void BcastTest::tearDown() {}
 
-void CollectiveTest::testBcastRootZero() {
+void BcastTest::testBcastRootZeroBinomial() {
   MPI_Barrier(MPI_COMM_WORLD);
   int rank = m_comm->rank();
   if (rank == 0) {
-    std::cout << "---test testBcastRootZero" << std::endl;
+    std::cout << "---test testBcastRootZeroBinomial" << std::endl;
   }
   int size = m_comm->size();
   CPPUNIT_ASSERT(rank >= 0 && rank < size);
-  CPPUNIT_ASSERT(size == 20);
 
   std::vector<char> data(256, 0);
   if (rank == 0) {
@@ -42,7 +41,31 @@ void CollectiveTest::testBcastRootZero() {
   }
 }
 
-void CollectiveTest::testBcastRootRandom() {
+void BcastTest::testBcastRootZeroSeq() {
+  MPI_Barrier(MPI_COMM_WORLD);
+  int rank = m_comm->rank();
+  if (rank == 0) {
+    std::cout << "---test testBcastRootZeroSeq" << std::endl;
+  }
+  int size = m_comm->size();
+  CPPUNIT_ASSERT(rank >= 0 && rank < size);
+
+  std::vector<char> data(256, 0);
+  if (rank == 0) {
+    for (unsigned i = 0; i < 256; i++) {
+      data[i] = 'A' + (i % 26);
+    }
+  }
+  int ret = m_comm->bcast((void*)data.data(), 256, sizeof(char), 0, bcast_algorithm::sequential);
+  CPPUNIT_ASSERT(ret == 0);
+
+  // check results
+  for (unsigned i = 0; i < 256; i++) {
+    CPPUNIT_ASSERT(data[i] == 'A' + (i % 26));
+  }
+}
+
+void BcastTest::testBcastRootRandom() {
   MPI_Barrier(MPI_COMM_WORLD);
   int rank = m_comm->rank();
   if (rank == 0) {
@@ -50,7 +73,6 @@ void CollectiveTest::testBcastRootRandom() {
   }
   int size = m_comm->size();
   CPPUNIT_ASSERT(rank >= 0 && rank < size);
-  CPPUNIT_ASSERT(size == 20);
 
   srand(time(NULL));
   int random_rank = rand() % 10;
@@ -72,7 +94,7 @@ void CollectiveTest::testBcastRootRandom() {
   }
 }
 
-void CollectiveTest::testIBcast() {
+void BcastTest::testIBcast() {
   MPI_Barrier(MPI_COMM_WORLD);
   int rank = m_comm->rank();
   if (rank == 0) {
@@ -80,7 +102,6 @@ void CollectiveTest::testIBcast() {
   }
   int size = m_comm->size();
   CPPUNIT_ASSERT(rank >= 0 && rank < size);
-  CPPUNIT_ASSERT(size == 20);
 
   std::vector<char> data(256, 0);
   if (rank == 0) {
