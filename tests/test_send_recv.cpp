@@ -70,6 +70,48 @@ void SendRecvTest::testISendIRecv() {
       CPPUNIT_ASSERT(data[i] == 'A' + (i % 26));
     }
   }
+}
 
+void SendRecvTest::testSendRecvInOneCall() {
   MPI_Barrier(MPI_COMM_WORLD);
+  int rank = m_comm->rank();
+  if (rank == 0) {
+    std::cout << "---test testSendRecvInOneCall" << std::endl;
+  }
+
+  std::vector<char> data_send(256, 0);
+  std::vector<char> data_recv(256, 0);
+
+  colza::request req;
+  if (rank == 0) {
+    for (unsigned i = 0; i < 256; i++) {
+      data_send[i] = 'A' + (i % 26);
+    }
+  }
+
+  if (rank == 1) {
+    for (unsigned i = 0; i < 256; i++) {
+      data_send[i] = 'B' + (i % 26);
+    }
+  }
+
+  int peer = (rank == 0) ? 1 : 0;
+  // send and recv from the peer
+  int ret =
+      m_comm->sendrecv((void*)data_send.data(), 256, sizeof(char), peer, 1234,
+                       (void*)data_recv.data(), 256, sizeof(char), peer, 1234);
+  // check results
+  if (rank == 0) {
+    for (unsigned i = 0; i < 256; i++) {
+      CPPUNIT_ASSERT(data_recv[i] == 'B' + (i % 26));
+    }
+  }
+
+  if (rank == 1) {
+    for (unsigned i = 0; i < 256; i++) {
+      CPPUNIT_ASSERT(data_recv[i] == 'A' + (i % 26));
+    }
+  }
+
+  CPPUNIT_ASSERT(ret == 0);
 }

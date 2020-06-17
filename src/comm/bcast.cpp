@@ -7,16 +7,34 @@ namespace colza {
 int bcast_binomial_tree(communicator* comm, void* data, int count,
                         size_t elem_size, int root);
 
-int communicator::bcast(void* data, int count, size_t elem_size, int root) {
-  int status = bcast_binomial_tree(this, data, count, elem_size, root);
+int bcast_sequential(communicator* comm, void* data, int count,
+                     size_t elem_size, int root);
+
+int communicator::bcast(void* data, int count, size_t elem_size, int root,
+                        bcast_algorithm types) {
+  int status;
+  switch (types) {
+    case bcast_algorithm::sequential:
+      status = bcast_sequential(this, data, count, elem_size, root);
+      break;
+
+    case bcast_algorithm::binomial:
+      status = bcast_binomial_tree(this, data, count, elem_size, root);
+      break;
+
+    default:
+      status = bcast_binomial_tree(this, data, count, elem_size, root);
+      break;
+  }
+
   return status;
 }
 
 int communicator::ibcast(void* data, int count, size_t elem_size, int root,
-                         request& req) {
+                         request& req, bcast_algorithm types) {
   m_controller->m_pool.make_thread(
-      [data, count, elem_size, root, &req, this]() {
-        bcast(data, count, elem_size, root);
+      [data, count, elem_size, root, &req, types, this]() {
+        bcast(data, count, elem_size, root, types);
         req.m_eventual.set_value();
       },
       tl::anonymous());
@@ -74,6 +92,30 @@ int bcast_binomial_tree(communicator* comm, void* data, int count,
     }
     mask >>= 1;
   }
+  return 0;
+}
+
+int bcast_sequential(communicator* comm, void* data, int count,
+                     size_t elem_size, int root) {
+  int comm_size = comm->size();
+  int rank = comm->rank();
+  int status;
+  if (rank == root) {
+    for (int dest = 0; dest < comm_size; dest++) {
+      if (dest != root) {
+        status = comm->send(data, elem_size * count, dest, COLZA_BARRIER_TAG);
+        if (status != 0) {
+          return status;
+        }
+      }
+    }
+  } else {
+    status = comm->recv(data, elem_size * count, root, COLZA_BARRIER_TAG);
+    if (status != 0) {
+      return status;
+    }
+  }
+
   return 0;
 }
 

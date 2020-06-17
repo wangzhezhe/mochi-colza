@@ -10,6 +10,7 @@
 #include <ssg.h>
 #include <thallium.hpp>
 #include <colza/tags.hpp>
+#include <colza/types.hpp>
 
 namespace colza {
 
@@ -38,10 +39,13 @@ class communicator {
     int isend(const void* data, size_t size, int dest, int tag, request& req);
     int recv(void* data, size_t size, int src, int tag);
     int irecv(void* data, size_t size, int src, int tag, request& req);
-    int barrier();
-    int ibarrier(request& req);
-    int bcast(void* data, int count, size_t elem_size, int root);
-    int ibcast(void* data, int count, size_t elem_size, int root, request& req);
+    int sendrecv(void *sendbuf, int sendcount, size_t sendsize,
+                           int dest, int sendtag, void *recvbuf, int recvcount,
+                           size_t recvsize, int source, int recvtag);
+    int barrier(barrier_algorithm types=barrier_algorithm::bcast);
+    int ibarrier(request& req, barrier_algorithm types=barrier_algorithm::bcast);
+    int bcast(void* data, int count, size_t elem_size, int root, bcast_algorithm types=bcast_algorithm::binomial);
+    int ibcast(void* data, int count, size_t elem_size, int root, request& req, bcast_algorithm types=bcast_algorithm::binomial);
     int gather(const void *sendBuffer, void *recvBuffer, size_t size, int dest);
     int igather(const void *sendBuffer, void *recvBuffer, size_t size, int dest, request& req);
     int gatherv(const void *sendBuffer, void *recvBuffer, size_t sendLength, size_t* recvLengths, size_t* offsets, int dest);

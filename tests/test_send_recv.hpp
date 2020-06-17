@@ -10,13 +10,15 @@ class SendRecvTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(SendRecvTest);
   CPPUNIT_TEST(testSendRecv);
   CPPUNIT_TEST(testISendIRecv);
+  CPPUNIT_TEST(testSendRecvInOneCall);
   CPPUNIT_TEST_SUITE_END();
 
  public:
-  void setUp() override;
-  void tearDown() override;
+  void setUp();
+  void tearDown();
   void testSendRecv();
   void testISendIRecv();
+  void testSendRecvInOneCall();
 };
 
 #endif

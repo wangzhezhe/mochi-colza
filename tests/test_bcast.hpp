@@ -6,9 +6,10 @@
 #include "colza/communicator.hpp"
 #include "colza/controller.hpp"
 
-class CollectiveTest : public CppUnit::TestFixture {
-  CPPUNIT_TEST_SUITE(CollectiveTest);
-  CPPUNIT_TEST(testBcastRootZero);
+class BcastTest : public CppUnit::TestFixture {
+  CPPUNIT_TEST_SUITE(BcastTest);
+  CPPUNIT_TEST(testBcastRootZeroSeq);
+  CPPUNIT_TEST(testBcastRootZeroBinomial);
   CPPUNIT_TEST(testBcastRootRandom);
   CPPUNIT_TEST(testIBcast);
   CPPUNIT_TEST_SUITE_END();
@@ -16,7 +17,8 @@ class CollectiveTest : public CppUnit::TestFixture {
  public:
   void setUp();
   void tearDown();
-  void testBcastRootZero();
+  void testBcastRootZeroSeq();
+  void testBcastRootZeroBinomial();
   void testBcastRootRandom();
   void testIBcast();
 };

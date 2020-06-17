@@ -70,6 +70,37 @@ int communicator::irecv(void *data, size_t size, int src, int tag,
   return 0;
 }
 
+// refer to
+// https://github.com/pmodels/mpich/blob/master/src/mpi/coll/helper_fns.c#L282
+int communicator::sendrecv(void *sendbuf, int sendcount, size_t sendsize,
+                           int dest, int sendtag, void *recvbuf, int recvcount,
+                           size_t recvsize, int source, int recvtag) {
+  int status;
+  colza::request sendreq, recvreq;
+
+  // TODO add the situation that source or dest is null
+  status = irecv(recvbuf, recvsize * recvcount, source, recvtag, recvreq);
+  if (status != 0) {
+    return status;
+  }
+
+  status = isend(sendbuf, sendsize * sendcount, dest, sendtag, sendreq);
+  if (status != 0) {
+    return status;
+  }
+
+  status = sendreq.wait();
+  if (status != 0) {
+    return status;
+  }
+  status = recvreq.wait();
+  if (status != 0) {
+    return status;
+  }
+
+  return status;
+}
+
 int communicator::on_p2p_transfer(const tl::endpoint &ep, tl::bulk &remote_bulk,
                                   size_t size, int32_t source, int32_t tag) {
   p2p_request req;
