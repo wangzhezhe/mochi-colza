@@ -80,10 +80,10 @@ class communicator {
     std::vector<ssg_member_id_t> m_members;
 
     struct p2p_request {
-        tl::bulk*     m_bulk;
+        tl::bulk*           m_bulk;
         const tl::endpoint* m_endpoint;
-        size_t        m_size;
-        bool          m_processed = false;
+        size_t              m_size;
+        tl::eventual<void>  m_eventual;
     };
 
     std::unordered_map<uint64_t, p2p_request*> m_pending_p2p_requests;
