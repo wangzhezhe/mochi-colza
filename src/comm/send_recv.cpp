@@ -42,22 +42,20 @@ int communicator::recv(void *data, size_t size, int src, int tag) {
   segment[0].second = size;
   tl::bulk local_bulk =
       m_controller->get_engine().expose(segment, tl::bulk_mode::write_only);
-  p2p_request *req_ptr = nullptr;
   // lock the pending request map to see if there is a matching request
   {
-    uint64_t sig = ((uint64_t)src << 32) | tag;
     std::unique_lock<tl::mutex> lock(m_pending_p2p_requests_mtx);
-    if(m_pending_p2p_requests.count(sig) == 0) {
-        m_pending_p2p_requests_cv.wait(
-            lock, [this, sig]() { return m_pending_p2p_requests.count(sig) != 0; });
-    }
+    uint64_t sig = ((uint64_t)src << 32) | tag;
+    m_pending_p2p_requests_cv.wait(
+        lock, [this, sig]() { return m_pending_p2p_requests.count(sig) != 0; });
     auto it = m_pending_p2p_requests.find(sig);
-    req_ptr = it->second;
+    p2p_request *req_ptr = it->second;
+    // TODO check that size matches req_ptr->m_size
+    local_bulk << req_ptr->m_bulk->on(*req_ptr->m_endpoint);
     m_pending_p2p_requests.erase(sig);
+    req_ptr->m_processed = true;
   }
-  // TODO check that size matches req_ptr->m_size
-  local_bulk << req_ptr->m_bulk->on(*req_ptr->m_endpoint);
-  req_ptr->m_eventual.set_value();
+  m_pending_p2p_requests_cv.notify_all();
   return 0;
 }
 
@@ -113,9 +111,10 @@ int communicator::on_p2p_transfer(const tl::endpoint &ep, tl::bulk &remote_bulk,
   {
     std::unique_lock<tl::mutex> lock(m_pending_p2p_requests_mtx);
     m_pending_p2p_requests[sig] = &req;
+    m_pending_p2p_requests_cv.notify_one();
+    m_pending_p2p_requests_cv.wait(lock, [&req]() { return req.m_processed; });
   }
-  m_pending_p2p_requests_cv.notify_one();
-  req.m_eventual.wait();
+  m_pending_p2p_requests_cv.notify_all();
   return 0;
 }
 
