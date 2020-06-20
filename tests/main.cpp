@@ -36,8 +36,9 @@ int main(int argc, char* argv[]) {
   runner.addTest(suite);
 
   // Change the default outputter to a compiler error format outputter
-  // runner.setOutputter( new CppUnit::XmlOutputter( &runner.result(), std::cerr
-  // ) );
+  runner.setOutputter(CppUnit::CompilerOutputter::defaultOutputter(
+      &runner.result(), std::cerr));
+
   // Run the tests.
   bool wasSucessful = runner.run();
 

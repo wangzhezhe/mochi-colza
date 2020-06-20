@@ -9,7 +9,6 @@ CPPUNIT_TEST_SUITE_REGISTRATION(BcastTest);
 
 namespace tl = thallium;
 
-// extern tl::engine* engine;
 extern colza::controller* m_controller;
 extern std::shared_ptr<colza::communicator> m_comm;
 
@@ -56,7 +55,8 @@ void BcastTest::testBcastRootZeroSeq() {
       data[i] = 'A' + (i % 26);
     }
   }
-  int ret = m_comm->bcast((void*)data.data(), 256, sizeof(char), 0, bcast_algorithm::sequential);
+  int ret = m_comm->bcast((void*)data.data(), 256, sizeof(char), 0,
+                          colza::COLZA_Bcast::sequential);
   CPPUNIT_ASSERT(ret == 0);
 
   // check results
@@ -73,9 +73,8 @@ void BcastTest::testBcastRootRandom() {
   }
   int size = m_comm->size();
   CPPUNIT_ASSERT(rank >= 0 && rank < size);
-
-  srand(time(NULL));
-  int random_rank = rand() % 10;
+  CPPUNIT_ASSERT(size >= 4);
+  int random_rank = 3;
 
   std::vector<char> data(256, 0);
   if (rank == 0) {
