@@ -12,14 +12,14 @@ namespace colza {
 int barrier_bcast(communicator* comm);
 int barrier_dissemination(communicator* comm);
 
-int communicator::barrier(barrier_algorithm types) {
+int communicator::barrier(COLZA_Barrier types) {
   int status;
   switch (types) {
-    case barrier_algorithm::bcast:
+    case COLZA_Barrier::bcast:
       status = barrier_bcast(this);
       break;
 
-    case barrier_algorithm::dissemination:
+    case COLZA_Barrier::dissemination:
       status = barrier_dissemination(this);
       break;
 
@@ -32,7 +32,7 @@ int communicator::barrier(barrier_algorithm types) {
   return status;
 }
 
-int communicator::ibarrier(request& req, barrier_algorithm types) {
+int communicator::ibarrier(request& req, COLZA_Barrier types) {
   m_controller->m_pool.make_thread(
       [types, &req, this]() {
         barrier(types);
