@@ -74,6 +74,8 @@ void SendRecvTest::testISendIRecv() {
 
 void SendRecvTest::testSendRecvInOneCall() {
   MPI_Barrier(MPI_COMM_WORLD);
+  int size = m_comm->size();
+  CPPUNIT_ASSERT(size == 2);
   int rank = m_comm->rank();
   if (rank == 0) {
     std::cout << "---test testSendRecvInOneCall" << std::endl;

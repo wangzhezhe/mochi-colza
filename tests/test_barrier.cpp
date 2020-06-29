@@ -29,7 +29,7 @@ void BarrierTest::testBarrierBcast() {
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(rank * 1000));
   std::cout << "get to the sync point for rank " << rank << std::endl;
-  int status = m_comm->barrier(barrier_algorithm::bcast);
+  int status = m_comm->barrier(colza::COLZA_Barrier::bcast);
   std::cout << "after the sync point for rank " << rank << std::endl;
   CPPUNIT_ASSERT(status == 0);
 }
@@ -42,7 +42,7 @@ void BarrierTest::testBarrierDissemination() {
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(rank * 1000));
   std::cout << "get to the sync point for rank " << rank << std::endl;
-  int status = m_comm->barrier(barrier_algorithm::dissemination);
+  int status = m_comm->barrier(colza::COLZA_Barrier::dissemination);
   std::cout << "after the sync point for rank " << rank << std::endl;
   CPPUNIT_ASSERT(status == 0);
   return;
