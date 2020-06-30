@@ -46,9 +46,10 @@ class communicator {
             COLZA_Bcast types = COLZA_Bcast::binomial);
   int ibcast(void *data, int count, size_t elemSize, int root, request &req,
              COLZA_Bcast types = COLZA_Bcast::binomial);
-  int gather(const void *sendBuffer, void *recvBuffer, size_t size, int dest);
-  int igather(const void *sendBuffer, void *recvBuffer, size_t size, int dest,
-              request &req);
+  int gather(const void *sendBuffer, size_t sendSize, void *recvBuffer,
+             int root);
+  int igather(const void *sendBuffer, size_t sendSize, void *recvBuffer,
+              int root, request &req);
   int gatherv(const void *sendBuffer, void *recvBuffer, size_t sendLength,
               size_t *recvLengths, size_t *offsets, int dest);
   int igatherv(const void *sendBuffer, void *recvBuffer, size_t sendLength,
