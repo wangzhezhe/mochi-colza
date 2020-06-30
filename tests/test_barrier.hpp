@@ -1,5 +1,5 @@
-#ifndef __COLZA_TEST_SEND_RECV_H
-#define __COLZA_TEST_SEND_RECV_H
+#ifndef __COLZA_TEST_BARRIER_H
+#define __COLZA_TEST_BARRIER_H
 
 #include <cppunit/extensions/HelperMacros.h>
 
