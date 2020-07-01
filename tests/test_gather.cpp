@@ -71,7 +71,7 @@ void GatherTest::testGatherLarge() {
   int root = 3;
   std::vector<char> senddata(256, 0);
   for (int i = 0; i < 256; i++) {
-    senddata[i]=('A' + ((i + rank) % 26));
+    senddata[i] = ('A' + ((i + rank) % 26));
   }
 
   std::vector<char> recvdata;
@@ -93,7 +93,7 @@ void GatherTest::testGatherLarge() {
   if (rank == root) {
     for (int i = 0; i < size; i++) {
       for (int j = 0; j < 256; j++) {
-        index = i*256+j;
+        index = i * 256 + j;
         CPPUNIT_ASSERT(recvdata[index] == ('A' + ((j + i) % 26)));
       }
     }
@@ -128,5 +128,45 @@ void GatherTest::testIGather() {
     for (int i = 0; i < size; i++) {
       CPPUNIT_ASSERT(data[i] == 'A' + (i % 26));
     }
+  }
+}
+
+void GatherTest::testAllGather() {
+  MPI_Barrier(MPI_COMM_WORLD);
+  int rank = m_comm->rank();
+  if (rank == 0) {
+    std::cout << "---test testAllGather" << std::endl;
+  }
+  int size = m_comm->size();
+  int root = 0;
+  char c = 'A' + (rank % 26);
+  std::vector<char> recvdata(size, 0);
+  int ret = m_comm->allgather(&c, recvdata.data(), sizeof(char));
+  CPPUNIT_ASSERT(ret == 0);
+  // check results at the root
+  for (int i = 0; i < size; i++) {
+    CPPUNIT_ASSERT(recvdata[i] == 'A' + (i % 26));
+  }
+}
+
+void GatherTest::testIAllGather() {
+  MPI_Barrier(MPI_COMM_WORLD);
+  int rank = m_comm->rank();
+  if (rank == 0) {
+    std::cout << "---test testIAllGather" << std::endl;
+  }
+  int size = m_comm->size();
+  int root = 0;
+  char c = 'A' + (rank % 26);
+  std::vector<char> recvdata(size, 0);
+  colza::request req;
+  int ret = m_comm->iallgather(&c, recvdata.data(), sizeof(char), req);
+  CPPUNIT_ASSERT(ret == 0);
+  // wait for the isend to finish
+  int finish = req.wait();
+
+  // check results at the root
+  for (int i = 0; i < size; i++) {
+    CPPUNIT_ASSERT(recvdata[i] == 'A' + (i % 26));
   }
 }

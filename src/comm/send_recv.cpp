@@ -47,9 +47,10 @@ int communicator::recv(void *data, size_t size, int src, int tag) {
   {
     uint64_t sig = ((uint64_t)src << 32) | tag;
     std::unique_lock<tl::mutex> lock(m_pending_p2p_requests_mtx);
-    if(m_pending_p2p_requests.count(sig) == 0) {
-        m_pending_p2p_requests_cv.wait(
-            lock, [this, sig]() { return m_pending_p2p_requests.count(sig) != 0; });
+    if (m_pending_p2p_requests.count(sig) == 0) {
+      m_pending_p2p_requests_cv.wait(lock, [this, sig]() {
+        return m_pending_p2p_requests.count(sig) != 0;
+      });
     }
     auto it = m_pending_p2p_requests.find(sig);
     req_ptr = it->second;
@@ -74,19 +75,19 @@ int communicator::irecv(void *data, size_t size, int src, int tag,
 
 // refer to
 // https://github.com/pmodels/mpich/blob/master/src/mpi/coll/helper_fns.c#L282
-int communicator::sendrecv(void *sendbuf, int sendcount, size_t sendsize,
-                           int dest, int sendtag, void *recvbuf, int recvcount,
-                           size_t recvsize, int source, int recvtag) {
+int communicator::sendrecv(void *sendbuf, size_t sendSize, int dest,
+                           int sendtag, void *recvbuf, size_t recvSize,
+                           int source, int recvtag) {
   int status;
   colza::request sendreq, recvreq;
 
   // TODO add the situation that source or dest is null
-  status = irecv(recvbuf, recvsize * recvcount, source, recvtag, recvreq);
+  status = irecv(recvbuf, recvSize, source, recvtag, recvreq);
   if (status != 0) {
     return status;
   }
 
-  status = isend(sendbuf, sendsize * sendcount, dest, sendtag, sendreq);
+  status = isend(sendbuf, sendSize, dest, sendtag, sendreq);
   if (status != 0) {
     return status;
   }

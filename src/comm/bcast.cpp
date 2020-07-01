@@ -4,37 +4,36 @@
 
 namespace colza {
 
-int bcast_binomial_tree(communicator* comm, void* data, int count,
-                        size_t elemSize, int root);
+int bcast_binomial_tree(communicator* comm, void* data, size_t nbytes,
+                        int root);
 
-int bcast_sequential(communicator* comm, void* data, int count,
-                     size_t elemSize, int root);
+int bcast_sequential(communicator* comm, void* data, size_t nbytes, int root);
 
-int communicator::bcast(void* data, int count, size_t elemSize, int root,
+int communicator::bcast(void* data, size_t nbytes, int root,
                         COLZA_Bcast types) {
   int status;
   switch (types) {
     case COLZA_Bcast::sequential:
-      status = bcast_sequential(this, data, count, elemSize, root);
+      status = bcast_sequential(this, data, nbytes, root);
       break;
 
     case COLZA_Bcast::binomial:
-      status = bcast_binomial_tree(this, data, count, elemSize, root);
+      status = bcast_binomial_tree(this, data, nbytes, root);
       break;
 
     default:
-      status = bcast_binomial_tree(this, data, count, elemSize, root);
+      status = bcast_binomial_tree(this, data, nbytes, root);
       break;
   }
 
   return status;
 }
 
-int communicator::ibcast(void* data, int count, size_t elemSize, int root,
-                         request& req, COLZA_Bcast types) {
+int communicator::ibcast(void* data, size_t nbytes, int root, request& req,
+                         COLZA_Bcast types) {
   m_controller->m_pool.make_thread(
-      [data, count, elemSize, root, &req, types, this]() {
-        bcast(data, count, elemSize, root, types);
+      [data, nbytes, root, &req, types, this]() {
+        bcast(data, nbytes, root, types);
         req.m_eventual.set_value();
       },
       tl::anonymous());
@@ -45,11 +44,10 @@ int communicator::ibcast(void* data, int count, size_t elemSize, int root,
 // https://mpitutorial.com/tutorials/mpi-broadcast-and-collective-communication/
 // refer to the implementation based on
 // https://github.com/pmodels/mpich/blob/master/src/mpi/coll/bcast/bcast_intra_binomial.c
-int bcast_binomial_tree(communicator* comm, void* data, int count,
-                        size_t elemSize, int root) {
+int bcast_binomial_tree(communicator* comm, void* data, size_t nbytes,
+                        int root) {
   int rank, comm_size, src, dst;
   int relative_rank, mask;
-  size_t nbytes;
   int status;
 
   comm_size = comm->size();
@@ -58,7 +56,6 @@ int bcast_binomial_tree(communicator* comm, void* data, int count,
   // If there is only one process, return
   if (comm_size == 1) return 0;
 
-  nbytes = elemSize * count;
   if (nbytes == 0) return 0;
 
   relative_rank = (rank >= root) ? rank - root : rank - root + comm_size;
@@ -95,22 +92,21 @@ int bcast_binomial_tree(communicator* comm, void* data, int count,
   return 0;
 }
 
-int bcast_sequential(communicator* comm, void* data, int count,
-                     size_t elemSize, int root) {
+int bcast_sequential(communicator* comm, void* data, size_t nbytes, int root) {
   int comm_size = comm->size();
   int rank = comm->rank();
   int status;
   if (rank == root) {
     for (int dest = 0; dest < comm_size; dest++) {
       if (dest != root) {
-        status = comm->send(data, elemSize * count, dest, COLZA_BARRIER_TAG);
+        status = comm->send(data, nbytes, dest, COLZA_BARRIER_TAG);
         if (status != 0) {
           return status;
         }
       }
     }
   } else {
-    status = comm->recv(data, elemSize * count, root, COLZA_BARRIER_TAG);
+    status = comm->recv(data, nbytes, root, COLZA_BARRIER_TAG);
     if (status != 0) {
       return status;
     }
