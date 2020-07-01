@@ -31,7 +31,7 @@ void BcastTest::testBcastRootZeroBinomial() {
       data[i] = 'A' + (i % 26);
     }
   }
-  int ret = m_comm->bcast((void*)data.data(), 256, sizeof(char), 0);
+  int ret = m_comm->bcast((void*)data.data(), 256* sizeof(char), 0);
   CPPUNIT_ASSERT(ret == 0);
 
   // check results
@@ -55,7 +55,7 @@ void BcastTest::testBcastRootZeroSeq() {
       data[i] = 'A' + (i % 26);
     }
   }
-  int ret = m_comm->bcast((void*)data.data(), 256, sizeof(char), 0,
+  int ret = m_comm->bcast((void*)data.data(), 256*sizeof(char), 0,
                           colza::COLZA_Bcast::sequential);
   CPPUNIT_ASSERT(ret == 0);
 
@@ -86,7 +86,7 @@ void BcastTest::testBcastRootRandom() {
       data[i] = 'A' + (i % 26);
     }
   }
-  int ret = m_comm->bcast((void*)data.data(), 256, sizeof(char), random_rank);
+  int ret = m_comm->bcast((void*)data.data(), 256*sizeof(char), random_rank);
   CPPUNIT_ASSERT(ret == 0);
   for (unsigned i = 0; i < 256; i++) {
     CPPUNIT_ASSERT(data[i] == 'A' + (i % 26));
@@ -110,7 +110,7 @@ void BcastTest::testIBcast() {
   }
 
   colza::request req;
-  int ret = m_comm->ibcast((void*)data.data(), 256, sizeof(char), 0, req);
+  int ret = m_comm->ibcast((void*)data.data(), 256*sizeof(char), 0, req);
   CPPUNIT_ASSERT(ret == 0);
   // wait for the isend to finish
   int finish = req.wait();

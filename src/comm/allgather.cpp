@@ -1,18 +1,40 @@
 #include "colza/communicator.hpp"
+#include "colza/controller.hpp"
 #include "colza/request.hpp"
 
 namespace colza {
+// gather to rank 0 firstly, and then bcast to all ranks
+int communicator::allgather(const void *sendBuffer, void *recvBuffer,
+                            size_t dataSize) {
+  int status;
+  int comm_size = this->size();
+  int rank = this->rank();
+  int root = 0;
 
-int communicator::allgather(const void *sendBuffer, void *recvBuffer, size_t size) {
-    request req;
-    int ret = iallgather(sendBuffer, recvBuffer, size, req);
-    if(ret != 0) return ret;
-    return req.wait();
+  status = this->gather(sendBuffer, dataSize, recvBuffer, root);
+  if (status != 0) {
+    std::cerr << "failed to gather data for allgather" << std::endl;
+    return status;
+  }
+
+  status = this->bcast(recvBuffer, comm_size * dataSize, root);
+  if (status != 0) {
+    std::cerr << "failed to bcast data for allgather" << std::endl;
+    return status;
+  }
+
+  return 0;
 }
 
-int communicator::iallgather(const void *sendBuffer, void *recvBuffer, size_t size, request& req) {
-
-    return -1;
+int communicator::iallgather(const void *sendBuffer, void *recvBuffer,
+                             size_t dataSize, request &req) {
+  m_controller->m_pool.make_thread(
+      [sendBuffer, recvBuffer, dataSize, &req, this]() {
+        allgather(sendBuffer, recvBuffer, dataSize);
+        req.m_eventual.set_value();
+      },
+      tl::anonymous());
+  return 0;
 }
 
-}
+}  // namespace colza

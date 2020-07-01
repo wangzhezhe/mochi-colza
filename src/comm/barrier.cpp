@@ -55,7 +55,7 @@ int barrier_bcast(communicator* comm) {
   char buffer = 'b';
   // bcast to all the ranks
   // 0-byte bcast will just return without doing anything.
-  status = comm->bcast(&buffer, 1, sizeof(char), 0);
+  status = comm->bcast(&buffer, sizeof(char), 0);
   return status;
 }
 
@@ -78,8 +78,8 @@ int barrier_dissemination(communicator* comm) {
     char sendbuffer = 'b';
     char recvbuffer;
     status =
-        comm->sendrecv(&sendbuffer, 1, sizeof(char), dst, COLZA_BARRIER_TAG,
-                       &recvbuffer, 1, sizeof(char), src, COLZA_BARRIER_TAG);
+        comm->sendrecv((void*)&sendbuffer, size_t(sizeof(char)), dst, COLZA_BARRIER_TAG,
+                       (void*)&recvbuffer, size_t(sizeof(char)), src, COLZA_BARRIER_TAG);
     if (status != 0) {
       // failed to execute sendrecv
       return status;

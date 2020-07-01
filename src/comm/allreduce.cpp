@@ -22,7 +22,7 @@ int communicator::allreduce(const void *sendBuffer, void *recvBuffer,
   // bcast
   int rank = this->rank();
 
-  status = this->bcast(recvBuffer, count, elementSize, root);
+  status = this->bcast(recvBuffer, count*elementSize, root);
   if (status != 0) {
     return status;
   }

@@ -12,6 +12,8 @@ class GatherTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(testGatherSmallNonZero);
   CPPUNIT_TEST(testGatherLarge);
   CPPUNIT_TEST(testIGather);
+  CPPUNIT_TEST(testAllGather);
+  CPPUNIT_TEST(testIAllGather);
   CPPUNIT_TEST_SUITE_END();
 
  public:
@@ -21,6 +23,8 @@ class GatherTest : public CppUnit::TestFixture {
   void testGatherSmallNonZero();
   void testGatherLarge();
   void testIGather();
+  void testAllGather();
+  void testIAllGather();
 };
 
 #endif

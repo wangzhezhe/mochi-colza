@@ -1,6 +1,7 @@
 #include "colza/communicator.hpp"
 #include "colza/controller.hpp"
 #include "colza/request.hpp"
+#include "colza/request.hpp"
 
 namespace colza {
 

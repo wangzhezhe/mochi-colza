@@ -100,8 +100,8 @@ void SendRecvTest::testSendRecvInOneCall() {
   int peer = (rank == 0) ? 1 : 0;
   // send and recv from the peer
   int ret =
-      m_comm->sendrecv((void*)data_send.data(), 256, sizeof(char), peer, 1234,
-                       (void*)data_recv.data(), 256, sizeof(char), peer, 1234);
+      m_comm->sendrecv((void*)data_send.data(), 256*sizeof(char), peer, 1234,
+                       (void*)data_recv.data(), 256*sizeof(char), peer, 1234);
   // check results
   if (rank == 0) {
     for (unsigned i = 0; i < 256; i++) {

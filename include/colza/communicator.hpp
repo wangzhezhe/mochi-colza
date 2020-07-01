@@ -37,26 +37,24 @@ class communicator {
   int isend(const void *data, size_t size, int dest, int tag, request &req);
   int recv(void *data, size_t size, int src, int tag);
   int irecv(void *data, size_t size, int src, int tag, request &req);
-  int sendrecv(void *sendbuf, int sendcount, size_t sendsize, int dest,
-               int sendtag, void *recvbuf, int recvcount, size_t recvsize,
-               int source, int recvtag);
+  int sendrecv(void *sendbuf, size_t sendSize, int dest, int sendtag,
+               void *recvbuf, size_t recvSize, int source, int recvtag);
   int barrier(COLZA_Barrier types = COLZA_Barrier::bcast);
   int ibarrier(request &req, COLZA_Barrier types = COLZA_Barrier::bcast);
-  int bcast(void *data, int count, size_t elemSize, int root,
+  int bcast(void *data, size_t nbytes, int root,
             COLZA_Bcast types = COLZA_Bcast::binomial);
-  int ibcast(void *data, int count, size_t elemSize, int root, request &req,
+  int ibcast(void *data, size_t nbytes, int root, request &req,
              COLZA_Bcast types = COLZA_Bcast::binomial);
   int gather(const void *sendBuffer, size_t sendSize, void *recvBuffer,
              int root);
   int igather(const void *sendBuffer, size_t sendSize, void *recvBuffer,
               int root, request &req);
-  int gatherv(const void *sendBuffer, void *recvBuffer,
-                          size_t sendCounts, size_t *recvCounts,
-                          size_t *offsets, size_t elementSize, int root);
-  int igatherv(const void *sendBuffer, void *recvBuffer,
-                           size_t sendCounts, size_t *recvCounts,
-                           size_t *offsets, size_t elementSize, int root,
-                           request &req);
+  int gatherv(const void *sendBuffer, void *recvBuffer, size_t sendCounts,
+              size_t *recvCounts, size_t *offsets, size_t elementSize,
+              int root);
+  int igatherv(const void *sendBuffer, void *recvBuffer, size_t sendCounts,
+               size_t *recvCounts, size_t *offsets, size_t elementSize,
+               int root, request &req);
   int scatter(const void *sendBuffer, void *recvBuffer, size_t size, int src);
   int iscatter(const void *sendBuffer, void *recvBuffer, size_t size, int src,
                request &req);
@@ -64,8 +62,8 @@ class communicator {
                size_t *offsets, size_t recvLength, int src);
   int iscatterv(const void *sendBuffer, void *recvBuffer, size_t *sendLengths,
                 size_t *offsets, size_t recvLength, int src, request &req);
-  int allgather(const void *sendBuffer, void *recvBuffer, size_t size);
-  int iallgather(const void *sendBuffer, void *recvBuffer, size_t size,
+  int allgather(const void *sendBuffer, void *recvBuffer, size_t dataSize);
+  int iallgather(const void *sendBuffer, void *recvBuffer, size_t dataSize,
                  request &req);
   int allgatherv(const void *sendBuffer, void *recvBuffer, size_t sendLength,
                  size_t *recvLengths, size_t *offsets);
@@ -80,6 +78,10 @@ class communicator {
                 size_t elementSize, COLZA_Operation_Func opFunc);
   int iallreduce(const void *sendBuffer, void *recvBuffer, size_t count,
                  size_t elementSize, COLZA_Operation_Func opFunc, request &req);
+  int alltoall(void *sendBuffer, size_t sendSize, void *recvBuffer,
+               size_t recvSize);
+  int ialltoall(void *sendBuffer, size_t sendSize, void *recvBuffer,
+                size_t recvSize, request &req);
 
  private:
   communicator(controller *owner, size_t size, size_t rank,
