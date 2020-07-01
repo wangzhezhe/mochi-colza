@@ -15,6 +15,9 @@ target_link_libraries(test_reduce ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colz
 add_executable(test_gather main.cpp test_gather.cpp)
 target_link_libraries(test_gather ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
+add_executable(test_gatherv main.cpp test_gatherv.cpp)
+target_link_libraries(test_gatherv ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
+
 add_test(NAME send_recv COMMAND ${RUNCOMMAND} 2 ./test_send_recv)
 
 add_test(NAME test_bcast COMMAND ${RUNCOMMAND} 20 ./test_bcast)
@@ -24,3 +27,5 @@ add_test(NAME test_barrier COMMAND ${RUNCOMMAND} 10 ./test_barrier)
 add_test(NAME test_reduce COMMAND ${RUNCOMMAND} 10 ./test_reduce)
 
 add_test(NAME test_gather COMMAND ${RUNCOMMAND} 10 ./test_gather)
+
+add_test(NAME test_gatherv COMMAND ${RUNCOMMAND} 10 ./test_gatherv)

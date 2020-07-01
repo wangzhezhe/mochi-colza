@@ -50,10 +50,13 @@ class communicator {
              int root);
   int igather(const void *sendBuffer, size_t sendSize, void *recvBuffer,
               int root, request &req);
-  int gatherv(const void *sendBuffer, void *recvBuffer, size_t sendLength,
-              size_t *recvLengths, size_t *offsets, int dest);
-  int igatherv(const void *sendBuffer, void *recvBuffer, size_t sendLength,
-               size_t *recvLengths, size_t *offsets, int dest, request &req);
+  int gatherv(const void *sendBuffer, void *recvBuffer,
+                          size_t sendCounts, size_t *recvCounts,
+                          size_t *offsets, size_t elementSize, int root);
+  int igatherv(const void *sendBuffer, void *recvBuffer,
+                           size_t sendCounts, size_t *recvCounts,
+                           size_t *offsets, size_t elementSize, int root,
+                           request &req);
   int scatter(const void *sendBuffer, void *recvBuffer, size_t size, int src);
   int iscatter(const void *sendBuffer, void *recvBuffer, size_t size, int src,
                request &req);
