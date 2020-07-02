@@ -17,7 +17,7 @@ set (colza-vers "${COLZA_VERSION_MAJOR}.${COLZA_VERSION_MINOR}")
 set (COLZA_VERSION "${colza-vers}.${COLZA_VERSION_PATCH}")
 
 add_library(colza ${colza-src})
-target_link_libraries (colza thallium ssg)
+target_link_libraries (colza uuid thallium ssg)
 target_include_directories (colza PUBLIC $<INSTALL_INTERFACE:include>)
 
 # local include's BEFORE, in case old incompatable .h files in prefix/include

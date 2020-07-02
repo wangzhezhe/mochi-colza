@@ -1,4 +1,5 @@
-set(RUNCOMMAND "mpirun -np")
+set(RUNCOMMAND "mpirun")
+set(PARAMETERS "")
 
 add_executable(test_send_recv main.cpp test_send_recv.cpp)
 target_link_libraries(test_send_recv ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
@@ -21,16 +22,21 @@ target_link_libraries(test_gatherv ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} col
 add_executable(test_alltoall main.cpp test_alltoall.cpp)
 target_link_libraries(test_alltoall ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
-add_test(NAME send_recv COMMAND ${RUNCOMMAND} 2 ./test_send_recv)
+add_executable(test_duplicate main.cpp test_duplicate.cpp)
+target_link_libraries(test_duplicate ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
-add_test(NAME test_bcast COMMAND ${RUNCOMMAND} 20 ./test_bcast)
+add_test(NAME send_recv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_send_recv)
 
-add_test(NAME test_barrier COMMAND ${RUNCOMMAND} 10 ./test_barrier)
+add_test(NAME test_bcast COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 20 ./test_bcast)
 
-add_test(NAME test_reduce COMMAND ${RUNCOMMAND} 10 ./test_reduce)
+add_test(NAME test_barrier COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_barrier)
 
-add_test(NAME test_gather COMMAND ${RUNCOMMAND} 10 ./test_gather)
+add_test(NAME test_reduce COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_reduce)
 
-add_test(NAME test_gatherv COMMAND ${RUNCOMMAND} 10 ./test_gatherv)
+add_test(NAME test_gather COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_gather)
 
-add_test(NAME test_alltoall COMMAND ${RUNCOMMAND} 10 ./test_alltoall)
+add_test(NAME test_gatherv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_gatherv)
+
+add_test(NAME test_alltoall COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_alltoall)
+
+add_test(NAME test_duplicate COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_duplicate)

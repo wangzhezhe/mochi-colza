@@ -7,6 +7,7 @@
 #include <thallium.hpp>
 #include <ssg.h>
 #include <colza/config.hpp>
+#include <colza/uuid.hpp>
 #ifdef COLZA_HAS_MPI
 #include <ssg-mpi.h>
 #endif
@@ -185,13 +186,13 @@ class controller : public tl::provider<controller> {
      * @param size Size of the remote data.
      * @param tag Tag.
      */
-    void on_p2p_transfer(const tl::request& req, uint64_t comm_id, tl::bulk& bulk, size_t size, int32_t source, int32_t tag);
+    void on_p2p_transfer(const tl::request& req, const UUID& comm_id, tl::bulk& bulk, size_t size, int32_t source, int32_t tag);
 
     tl::provider_handle member_id_to_provider_handle(ssg_member_id_t member_id);
 
     ssg_group_id_t       m_ssg_group_id = SSG_GROUP_ID_INVALID;
     tl::pool             m_pool;
-    std::unordered_map<uint64_t, std::shared_ptr<communicator>> m_communicators;
+    std::unordered_map<UUID, std::shared_ptr<communicator>, UUID_hash_fn> m_communicators;
     tl::remote_procedure m_p2p_transfer_rpc;
 };
 

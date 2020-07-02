@@ -1,10 +1,12 @@
 #include "colza/controller.hpp"
 #include "colza/communicator.hpp"
+#include "colza/uuid.hpp"
 
 namespace colza {
     
 std::shared_ptr<communicator> controller::build_world_communicator() {
-    auto it = m_communicators.find(0);
+    UUID masterid;
+    auto it = m_communicators.find(masterid);
     if(it != m_communicators.end()) {
         return it->second;
     }
@@ -16,7 +18,7 @@ std::shared_ptr<communicator> controller::build_world_communicator() {
     }
     int rank = ssg_get_group_self_rank(m_ssg_group_id);
     auto c = std::shared_ptr<communicator>(new communicator(const_cast<controller*>(this), size, rank, std::move(members)));
-    m_communicators[0] = c;
+    m_communicators[masterid] = c;
     return c;
 }
 
