@@ -6,6 +6,7 @@
 
 #include <colza/tags.hpp>
 #include <colza/types.hpp>
+#include <colza/uuid.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -83,9 +84,11 @@ class communicator {
   int ialltoall(void *sendBuffer, size_t sendSize, void *recvBuffer,
                 size_t recvSize, request &req);
 
+  int duplicate(communicator** newcommptr);
+
  private:
   communicator(controller *owner, size_t size, size_t rank,
-               std::vector<ssg_member_id_t> &&members)
+               std::vector<ssg_member_id_t> members)
       : m_controller(owner),
         m_size(size),
         m_rank(rank),
@@ -95,7 +98,7 @@ class communicator {
                       size_t size, int32_t source, int32_t tag);
 
   controller *m_controller;
-  uint64_t m_comm_id = 0;
+  UUID m_comm_id;
   size_t m_size;
   size_t m_rank;
   std::vector<ssg_member_id_t> m_members;

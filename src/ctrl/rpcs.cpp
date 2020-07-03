@@ -4,7 +4,7 @@
 namespace colza {
     
 void controller::on_p2p_transfer(const tl::request& req,
-                         uint64_t comm_id,
+                         const UUID& comm_id,
                          tl::bulk& bulk,
                          size_t size,
                          int32_t source,

@@ -62,6 +62,8 @@ endif (CPPUNIT_FOUND)
 include (xpkg-import)
 find_package (thallium REQUIRED)
 xpkg_import_module (ssg REQUIRED ssg)
+xpkg_import_module (uuid REQUIRED uuid)
+
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/colza/config.hpp.in
