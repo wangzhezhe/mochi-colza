@@ -84,7 +84,9 @@ class communicator {
   int ialltoall(void *sendBuffer, size_t sendSize, void *recvBuffer,
                 size_t recvSize, request &req);
 
-  int duplicate(communicator** newcommptr);
+  int duplicate(communicator **newcommptr);
+
+  int subset(communicator **newcommptr, int arrayLen, const int32_t *rankArray);
 
  private:
   communicator(controller *owner, size_t size, size_t rank,

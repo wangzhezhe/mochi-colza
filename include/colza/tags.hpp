@@ -33,6 +33,7 @@
 #define COLZA_SHRINK_TAG               29
 #define COLZA_AGREE_TAG                30
 #define COLZA_FIRST_HCOLL_TAG          31
+#define COLZA_SUBSET_TAG               32
 #define COLZA_LAST_HCOLL_TAG           (COLZA_FIRST_HCOLL_TAG + 255)
 #define COLZA_FIRST_NBC_TAG            (COLZA_LAST_HCOLL_TAG + 1)
 
