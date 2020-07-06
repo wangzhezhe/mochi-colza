@@ -108,4 +108,23 @@ controller* controller::create(tl::engine* engine, pmix_proc_t proc,
   return new ctrl;
 }
 #endif
+
+controller* controller::join(tl::engine* engine, const std::string& descriptor,
+                             uint16_t provider_id, const tl::pool& pool) {
+  auto ctrl = new controller(engine, provider_id, pool);
+  ssg_group_id_t gid;
+  int num_addrs = 128;
+  ssg_group_id_deserialize(
+          descriptor.c_str(),
+          descriptor.size(),
+          &num_addrs, &gid);
+  int ret = ssg_group_join_target(
+          engine->get_margo_instance(),
+          gid, nullptr, controller::group_membership_update,
+          static_cast<void*>(ctrl));
+  // TODO check return value
+  ctrl->init(gid);
+  return ctrl;
+}
+
 }  // namespace colza

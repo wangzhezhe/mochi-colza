@@ -128,7 +128,23 @@ class controller : public tl::provider<controller> {
                               uint16_t provider_id=0,
                               const tl::pool& pool = tl::pool());
 #endif
-    
+   
+    /**
+     * @brief Creates a controller by joining an existing group.
+     * The descriptor should have been generated with the descriptor() function.
+     *
+     * @param engine Thallium engine.
+     * @param descriptor Group descriptor.
+     * @param provider_id Provider id.
+     * @param pool Pool to use to execute RPCs.
+     *
+     * @return a pointer to a controller. 
+     */
+    static controller* join(tl::engine* engine,
+                            const std::string& descriptor,
+                            uint16_t provider_id,
+                            const tl::pool& pool);
+
     /**
      * @brief Destructor.
      */
@@ -162,6 +178,16 @@ class controller : public tl::provider<controller> {
      * @return a pointer to a communicator.
      */
     std::shared_ptr<communicator> build_world_communicator();
+
+    /**
+     * @brief Creates a descriptor that can be used by other processes
+     * to call controller::join. Note that descriptors change as the group members
+     * join and leave, so make sure to use controller::join on a fairly recent
+     * version of the group descriptor.
+     *
+     * @return descriptor.
+     */
+    std::string descriptor() const;
 
     private:
 
