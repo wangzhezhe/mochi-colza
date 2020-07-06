@@ -9,4 +9,13 @@ tl::provider_handle controller::member_id_to_provider_handle(ssg_member_id_t mem
     return tl::provider_handle(get_engine(), addr, get_provider_id(), false);
 }
 
+std::string controller::descriptor() const {
+    char* buf = nullptr;
+    size_t buf_size;
+    ssg_group_id_serialize(m_ssg_group_id, SSG_ALL_MEMBERS, &buf, &buf_size);
+    std::string desc(buf, buf_size);
+    free(buf);
+    return desc;
+}
+
 }
