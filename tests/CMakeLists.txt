@@ -25,6 +25,9 @@ target_link_libraries(test_alltoall ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} co
 add_executable(test_duplicate main.cpp test_duplicate.cpp)
 target_link_libraries(test_duplicate ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
+add_executable(test_subset main.cpp test_subset.cpp)
+target_link_libraries(test_subset ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
+
 add_test(NAME send_recv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_send_recv)
 
 add_test(NAME test_bcast COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 20 ./test_bcast)
@@ -40,3 +43,5 @@ add_test(NAME test_gatherv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_gath
 add_test(NAME test_alltoall COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_alltoall)
 
 add_test(NAME test_duplicate COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_duplicate)
+
+add_test(NAME test_subset COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_subset)

@@ -73,8 +73,8 @@ void BcastTest::testBcastRootRandom() {
   }
   int size = m_comm->size();
   CPPUNIT_ASSERT(rank >= 0 && rank < size);
-  CPPUNIT_ASSERT(size >= 4);
-  int random_rank = 3;
+  CPPUNIT_ASSERT(size >= 2);
+  int random_rank = 1;
 
   std::vector<char> data(256, 0);
   if (rank == 0) {

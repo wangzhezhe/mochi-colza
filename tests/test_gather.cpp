@@ -44,8 +44,8 @@ void GatherTest::testGatherSmallNonZero() {
     std::cout << "---test testGatherSmallNonZero" << std::endl;
   }
   int size = m_comm->size();
-  CPPUNIT_ASSERT(size >= 6);
-  int root = 5;
+  CPPUNIT_ASSERT(size >= 2);
+  int root = 1;
 
   char c = 'A' + (rank % 26);
   std::vector<char> data(size, 0);
@@ -67,8 +67,8 @@ void GatherTest::testGatherLarge() {
     std::cout << "---test testGatherLarge" << std::endl;
   }
   int size = m_comm->size();
-  CPPUNIT_ASSERT(size >= 4);
-  int root = 3;
+  CPPUNIT_ASSERT(size >= 2);
+  int root = 1;
   std::vector<char> senddata(256, 0);
   for (int i = 0; i < 256; i++) {
     senddata[i] = ('A' + ((i + rank) % 26));
