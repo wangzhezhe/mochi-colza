@@ -6,10 +6,7 @@ namespace colza {
     
 std::shared_ptr<communicator> controller::build_world_communicator() {
     UUID masterid;
-    auto it = m_communicators.find(masterid);
-    if(it != m_communicators.end()) {
-        return it->second;
-    }
+    UUID nullid;
     int size = ssg_get_group_size(m_ssg_group_id);
     std::vector<ssg_member_id_t> members(size);
     for(unsigned i=0; i < size; i++) {
@@ -17,8 +14,22 @@ std::shared_ptr<communicator> controller::build_world_communicator() {
         // TODO check return value of this call
     }
     int rank = ssg_get_group_self_rank(m_ssg_group_id);
-    auto c = std::shared_ptr<communicator>(new communicator(const_cast<controller*>(this), size, rank, std::move(members)));
+    auto temp_comm = std::shared_ptr<communicator>(
+            new communicator(const_cast<controller*>(this),
+                             size, rank, members));
+    temp_comm->m_comm_id = nullid;
+    m_communicators[nullid] = temp_comm;
+    if(rank == 0) 
+        masterid = UUID::generate();
+    temp_comm->bcast(&masterid, sizeof(masterid), 0);
+    auto c = std::shared_ptr<communicator>(
+            new communicator(const_cast<controller*>(this),
+                             size, rank, std::move(members)));
+    c->m_comm_id = masterid;
     m_communicators[masterid] = c;
+    temp_comm->barrier();
+    m_communicators.erase(nullid);
+
     return c;
 }
 
