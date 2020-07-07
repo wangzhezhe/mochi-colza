@@ -88,6 +88,10 @@ class communicator {
 
   int subset(communicator **newcommptr, int arrayLen, const int32_t *rankArray);
 
+  int wait(request &req);
+
+  int waitAny(int count, request *reqList);
+
  private:
   communicator(controller *owner, size_t size, size_t rank,
                std::vector<ssg_member_id_t> members)

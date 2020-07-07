@@ -22,7 +22,7 @@ int communicator::allreduce(const void *sendBuffer, void *recvBuffer,
   // bcast
   int rank = this->rank();
 
-  status = this->bcast(recvBuffer, count*elementSize, root);
+  status = this->bcast(recvBuffer, count * elementSize, root);
   if (status != 0) {
     return status;
   }
@@ -33,10 +33,11 @@ int communicator::allreduce(const void *sendBuffer, void *recvBuffer,
 int communicator::iallreduce(const void *sendBuffer, void *recvBuffer,
                              size_t count, size_t elementSize,
                              COLZA_Operation_Func opFunc, request &req) {
+  auto eventual = req.m_eventual;
   this->m_controller->m_pool.make_thread(
-      [sendBuffer, recvBuffer, count, elementSize, opFunc, &req, this]() {
+      [sendBuffer, recvBuffer, count, elementSize, opFunc, eventual, this]() {
         allreduce(sendBuffer, recvBuffer, count, elementSize, opFunc);
-        req.m_eventual.set_value();
+        eventual->set_value();
       },
       tl::anonymous());
   return 0;

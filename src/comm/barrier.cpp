@@ -33,10 +33,11 @@ int communicator::barrier(COLZA_Barrier types) {
 }
 
 int communicator::ibarrier(request& req, COLZA_Barrier types) {
+  auto eventual = req.m_eventual;
   m_controller->m_pool.make_thread(
-      [types, &req, this]() {
+      [types, eventual, this]() {
         barrier(types);
-        req.m_eventual.set_value();
+        eventual->set_value();
       },
       tl::anonymous());
   return 0;
@@ -77,9 +78,9 @@ int barrier_dissemination(communicator* comm) {
     // the size can not be empty for mercury
     char sendbuffer = 'b';
     char recvbuffer;
-    status =
-        comm->sendrecv((void*)&sendbuffer, size_t(sizeof(char)), dst, COLZA_BARRIER_TAG,
-                       (void*)&recvbuffer, size_t(sizeof(char)), src, COLZA_BARRIER_TAG);
+    status = comm->sendrecv((void*)&sendbuffer, size_t(sizeof(char)), dst,
+                            COLZA_BARRIER_TAG, (void*)&recvbuffer,
+                            size_t(sizeof(char)), src, COLZA_BARRIER_TAG);
     if (status != 0) {
       // failed to execute sendrecv
       return status;
