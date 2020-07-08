@@ -84,9 +84,9 @@ class communicator {
   int ialltoall(void *sendBuffer, size_t sendSize, void *recvBuffer,
                 size_t recvSize, request &req);
 
-  int duplicate(communicator **newcommptr);
+  int duplicate(std::shared_ptr<communicator>* newcommptr);
 
-  int subset(communicator **newcommptr, int arrayLen, const int32_t *rankArray);
+  int subset(std::shared_ptr<communicator>* newcommptr, int arrayLen, const int32_t *rankArray);
 
   int wait(request &req);
 

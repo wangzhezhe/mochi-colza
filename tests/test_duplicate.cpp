@@ -20,14 +20,14 @@ void CommDuplicateTest::testCommDuplicate() {
   if (rank == 0) {
     std::cout << "---test testDuplicate" << std::endl;
   }
-  colza::communicator* newcomm = nullptr;
+  std::shared_ptr<colza::communicator> newcomm(nullptr);
   int ret = m_comm->duplicate(&newcomm);
   CPPUNIT_ASSERT(ret == 0);
   CPPUNIT_ASSERT(newcomm != nullptr);
 
   // sendrecv for the new communicator
-  rank = newcomm->rank();
-  int size = newcomm->size();
+  rank = newcomm.get()->rank();
+  int size = newcomm.get()->size();
   CPPUNIT_ASSERT(rank >= 0 && rank < size);
   CPPUNIT_ASSERT(size == 2);
   std::vector<char> data(256, 0);
@@ -35,10 +35,10 @@ void CommDuplicateTest::testCommDuplicate() {
     for (unsigned i = 0; i < 256; i++) {
       data[i] = 'A' + (i % 26);
     }
-    int ret = newcomm->send((const void*)data.data(), 256, rank + 1, 1234);
+    int ret = newcomm.get()->send((const void*)data.data(), 256, rank + 1, 1234);
     CPPUNIT_ASSERT(ret == 0);
   } else {
-    int ret = newcomm->recv((void*)data.data(), 256, rank - 1, 1234);
+    int ret = newcomm.get()->recv((void*)data.data(), 256, rank - 1, 1234);
     CPPUNIT_ASSERT(ret == 0);
     for (unsigned i = 0; i < 256; i++) {
       CPPUNIT_ASSERT(data[i] == 'A' + (i % 26));
