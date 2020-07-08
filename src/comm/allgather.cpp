@@ -28,13 +28,15 @@ int communicator::allgather(const void *sendBuffer, void *recvBuffer,
 
 int communicator::iallgather(const void *sendBuffer, void *recvBuffer,
                              size_t dataSize, request &req) {
-  auto eventual = req.m_eventual;
+  request tmp(std::make_shared<tl::eventual<void>>());
+  auto eventual = tmp.m_eventual;
   m_controller->m_pool.make_thread(
       [sendBuffer, recvBuffer, dataSize, eventual, this]() {
         allgather(sendBuffer, recvBuffer, dataSize);
         eventual->set_value();
       },
       tl::anonymous());
+  req = std::move(tmp);
   return 0;
 }
 

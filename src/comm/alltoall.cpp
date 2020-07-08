@@ -30,13 +30,15 @@ int communicator::alltoall(void* sendBuffer, size_t sendSize, void* recvBuffer,
 
 int communicator::ialltoall(void* sendBuffer, size_t sendSize, void* recvBuffer,
                             size_t recvSize, request& req) {
-  auto eventual = req.m_eventual;
+  request tmp(std::make_shared<tl::eventual<void>>());
+  auto eventual = tmp.m_eventual;
   this->m_controller->m_pool.make_thread(
       [sendBuffer, sendSize, recvBuffer, recvSize, eventual, this]() {
         alltoall(sendBuffer, sendSize, recvBuffer, recvSize);
         eventual->set_value();
       },
       tl::anonymous());
+  req = std::move(tmp);
   return 0;
 }
 

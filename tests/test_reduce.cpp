@@ -146,7 +146,7 @@ void ReduceTest::testIReduceSumInt64Vector() {
                       sizeof(int64_t), colza::COLZA_OP_SUM_DOUBLE, dest, req);
   CPPUNIT_ASSERT(ret == 0);
   // wait for the isend to finish
-  int finish = req.wait();
+  int finish = m_comm->wait(req);
   CPPUNIT_ASSERT(finish == 0);
 
   if (rank == dest) {
@@ -207,7 +207,7 @@ void ReduceTest::testIAllReduceSumInt64Vector() {
 
   CPPUNIT_ASSERT(ret == 0);
   // wait for the isend to finish
-  int finish = req.wait();
+  int finish = m_comm->wait(req);
   CPPUNIT_ASSERT(finish == 0);
   // check results for every rank
   std::vector<int64_t> expectedValue(256, 0);

@@ -50,7 +50,8 @@ int communicator::igatherv(const void *sendBuffer, void *recvBuffer,
                            size_t sendCounts, size_t *recvCounts,
                            size_t *offsets, size_t elementSize, int root,
                            request &req) {
-  auto eventual = req.m_eventual;
+  request tmp(std::make_shared<tl::eventual<void>>());
+  auto eventual = tmp.m_eventual;
   m_controller->m_pool.make_thread(
       [sendBuffer, recvBuffer, sendCounts, recvCounts, offsets, elementSize,
        root, eventual, this]() {
@@ -59,6 +60,7 @@ int communicator::igatherv(const void *sendBuffer, void *recvBuffer,
         eventual->set_value();
       },
       tl::anonymous());
+  req = std::move(tmp);
   return 0;
 }
 

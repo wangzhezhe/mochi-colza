@@ -70,7 +70,7 @@ void GathervTest::testIGatherv() {
                              offset.data(), sizeof(char), root, req);
   CPPUNIT_ASSERT(ret == 0);
   // wait for the isend to finish
-  int finish = req.wait();
+  int finish = m_comm->wait(req);
   CPPUNIT_ASSERT(finish == 0);
   // check results at the root
   if (rank == root) {

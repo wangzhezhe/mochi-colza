@@ -61,7 +61,7 @@ void AlltoallTest::testIAlltoall() {
                               sizeof(char), req);
   CPPUNIT_ASSERT(ret == 0);
   // wait for the isend to finish
-  int finish = req.wait();
+  int finish = m_comm->wait(req);
 
   // check results
   for (int i = 0; i < size; i++) {

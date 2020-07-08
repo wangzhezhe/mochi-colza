@@ -33,13 +33,15 @@ int communicator::allreduce(const void *sendBuffer, void *recvBuffer,
 int communicator::iallreduce(const void *sendBuffer, void *recvBuffer,
                              size_t count, size_t elementSize,
                              COLZA_Operation_Func opFunc, request &req) {
-  auto eventual = req.m_eventual;
+  request tmp(std::make_shared<tl::eventual<void>>());
+  auto eventual = tmp.m_eventual;
   this->m_controller->m_pool.make_thread(
       [sendBuffer, recvBuffer, count, elementSize, opFunc, eventual, this]() {
         allreduce(sendBuffer, recvBuffer, count, elementSize, opFunc);
         eventual->set_value();
       },
       tl::anonymous());
+  req = std::move(tmp);
   return 0;
 }
 

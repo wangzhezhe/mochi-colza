@@ -26,13 +26,15 @@ int communicator::send(const void *data, size_t size, int dest, int tag) {
 
 int communicator::isend(const void *data, size_t size, int dest, int tag,
                         request &req) {
-  auto eventual = req.m_eventual;
+  request tmp(std::make_shared<tl::eventual<void>>());
+  auto eventual = tmp.m_eventual;
   m_controller->m_pool.make_thread(
       [data, size, dest, tag, eventual, this]() {
         send(data, size, dest, tag);
         eventual->set_value();
       },
       tl::anonymous());
+  req = std::move(tmp);
   return 0;
 }
 
@@ -65,13 +67,15 @@ int communicator::recv(void *data, size_t size, int src, int tag) {
 
 int communicator::irecv(void *data, size_t size, int src, int tag,
                         request &req) {
-  auto eventual = req.m_eventual;
+  request tmp(std::make_shared<tl::eventual<void>>());
+  auto eventual = tmp.m_eventual;
   m_controller->m_pool.make_thread(
       [data, size, src, tag, eventual, this]() {
         recv(data, size, src, tag);
         eventual->set_value();
       },
       tl::anonymous());
+  req = std::move(tmp);
   return 0;
 }
 
@@ -94,11 +98,11 @@ int communicator::sendrecv(void *sendbuf, size_t sendSize, int dest,
     return status;
   }
 
-  status = sendreq.wait();
+  status = wait(sendreq);
   if (status != 0) {
     return status;
   }
-  status = recvreq.wait();
+  status = wait(recvreq);
   if (status != 0) {
     return status;
   }

@@ -121,7 +121,7 @@ void GatherTest::testIGather() {
   int ret = m_comm->igather(&c, sizeof(char), (void*)data.data(), root, req);
   CPPUNIT_ASSERT(ret == 0);
   // wait for the isend to finish
-  int finish = req.wait();
+  int finish = m_comm->wait(req);
   CPPUNIT_ASSERT(finish == 0);
   // check results at the root
   if (rank == root) {
@@ -163,7 +163,7 @@ void GatherTest::testIAllGather() {
   int ret = m_comm->iallgather(&c, recvdata.data(), sizeof(char), req);
   CPPUNIT_ASSERT(ret == 0);
   // wait for the isend to finish
-  int finish = req.wait();
+  int finish = m_comm->wait(req);
 
   // check results at the root
   for (int i = 0; i < size; i++) {

@@ -3,7 +3,11 @@
 #include "colza/request.hpp"
 
 namespace colza {
-int communicator::wait(request& req) { return req.wait(); }
+int communicator::wait(request& req) {
+    if(!req) return -1;
+    req.m_eventual->wait();
+    return 0;
+}
 
 int communicator::waitAny(int count, request* reqList) {
   // TODO this is an active loop, we should change it
@@ -15,6 +19,8 @@ int communicator::waitAny(int count, request* reqList) {
 try_again:
   for (i = 0; i < count; i++) {
     has_pending_requests = 1;
+    if(!reqList[i].m_eventual)
+        continue;
     flag = reqList[i].m_eventual->test();
     if (flag) {
       this->wait(reqList[i]);

@@ -57,14 +57,14 @@ void SendRecvTest::testISendIRecv() {
     int ret = m_comm->isend((const void*)data.data(), 256, rank + 1, 1234, req);
     CPPUNIT_ASSERT(ret == 0);
     // wait for the isend to finish
-    int finish = req.wait();
+    int finish = m_comm->wait(req);
     CPPUNIT_ASSERT(finish == 0);
   } else {
     int ret = m_comm->irecv((void*)data.data(), 256, rank - 1, 1234, req);
 
     CPPUNIT_ASSERT(ret == 0);
     // wait for the ircv to finish
-    int finish = req.wait();
+    int finish = m_comm->wait(req);
     CPPUNIT_ASSERT(finish == 0);
     for (unsigned i = 0; i < 256; i++) {
       CPPUNIT_ASSERT(data[i] == 'A' + (i % 26));

@@ -113,7 +113,7 @@ void BcastTest::testIBcast() {
   int ret = m_comm->ibcast((void*)data.data(), 256*sizeof(char), 0, req);
   CPPUNIT_ASSERT(ret == 0);
   // wait for the isend to finish
-  int finish = req.wait();
+  int finish = m_comm->wait(req);
   CPPUNIT_ASSERT(finish == 0);
 
   for (unsigned i = 0; i < 256; i++) {

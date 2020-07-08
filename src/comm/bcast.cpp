@@ -31,13 +31,15 @@ int communicator::bcast(void* data, size_t nbytes, int root,
 
 int communicator::ibcast(void* data, size_t nbytes, int root, request& req,
                          COLZA_Bcast types) {
-  auto eventual = req.m_eventual;
+  request tmp(std::make_shared<tl::eventual<void>>());
+  auto eventual = tmp.m_eventual;
   m_controller->m_pool.make_thread(
       [data, nbytes, root, eventual, types, this]() {
         bcast(data, nbytes, root, types);
         eventual->set_value();
       },
       tl::anonymous());
+  req = std::move(tmp);
   return 0;
 }
 

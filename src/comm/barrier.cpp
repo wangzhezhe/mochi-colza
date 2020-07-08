@@ -33,13 +33,15 @@ int communicator::barrier(COLZA_Barrier types) {
 }
 
 int communicator::ibarrier(request& req, COLZA_Barrier types) {
-  auto eventual = req.m_eventual;
+  request tmp(std::make_shared<tl::eventual<void>>());
+  auto eventual = tmp.m_eventual;
   m_controller->m_pool.make_thread(
       [types, eventual, this]() {
         barrier(types);
         eventual->set_value();
       },
       tl::anonymous());
+  req = std::move(tmp);
   return 0;
 }
 
