@@ -1,7 +1,6 @@
 #include "colza/communicator.hpp"
 #include "colza/controller.hpp"
 #include "colza/request.hpp"
-#include "colza/request.hpp"
 
 namespace colza {
 
@@ -51,12 +50,13 @@ int communicator::igatherv(const void *sendBuffer, void *recvBuffer,
                            size_t sendCounts, size_t *recvCounts,
                            size_t *offsets, size_t elementSize, int root,
                            request &req) {
+  auto eventual = req.m_eventual;
   m_controller->m_pool.make_thread(
       [sendBuffer, recvBuffer, sendCounts, recvCounts, offsets, elementSize,
-       root, &req, this]() {
+       root, eventual, this]() {
         gatherv(sendBuffer, recvBuffer, sendCounts, recvCounts, offsets,
                 elementSize, root);
-        req.m_eventual.set_value();
+        eventual->set_value();
       },
       tl::anonymous());
   return 0;

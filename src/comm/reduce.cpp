@@ -90,10 +90,12 @@ int communicator::reduce(const void *sendBuffer, void *recvBuffer, size_t count,
 int communicator::ireduce(const void *sendBuffer, void *recvBuffer,
                           size_t count, size_t elementSize,
                           COLZA_Operation_Func opFunc, int root, request &req) {
+  auto eventual = req.m_eventual;
   this->m_controller->m_pool.make_thread(
-      [sendBuffer, recvBuffer, count, elementSize, opFunc, root, &req, this]() {
+      [sendBuffer, recvBuffer, count, elementSize, opFunc, root, eventual,
+       this]() {
         reduce(sendBuffer, recvBuffer, count, elementSize, opFunc, root);
-        req.m_eventual.set_value();
+        eventual->set_value();
       },
       tl::anonymous());
   return 0;

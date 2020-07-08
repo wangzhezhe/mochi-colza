@@ -45,10 +45,11 @@ int communicator::gather(const void *sendBuffer, size_t sendSize,
 
 int communicator::igather(const void *sendBuffer, size_t sendSize,
                           void *recvBuffer, int root, request &req) {
+  auto eventual = req.m_eventual;
   m_controller->m_pool.make_thread(
-      [sendBuffer, sendSize, recvBuffer, root, &req, this]() {
+      [sendBuffer, sendSize, recvBuffer, root, eventual, this]() {
         gather(sendBuffer, sendSize, recvBuffer, root);
-        req.m_eventual.set_value();
+        eventual->set_value();
       },
       tl::anonymous());
   return 0;

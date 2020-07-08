@@ -26,10 +26,11 @@ int communicator::send(const void *data, size_t size, int dest, int tag) {
 
 int communicator::isend(const void *data, size_t size, int dest, int tag,
                         request &req) {
+  auto eventual = req.m_eventual;
   m_controller->m_pool.make_thread(
-      [data, size, dest, tag, &req, this]() {
+      [data, size, dest, tag, eventual, this]() {
         send(data, size, dest, tag);
-        req.m_eventual.set_value();
+        eventual->set_value();
       },
       tl::anonymous());
   return 0;
@@ -64,10 +65,11 @@ int communicator::recv(void *data, size_t size, int src, int tag) {
 
 int communicator::irecv(void *data, size_t size, int src, int tag,
                         request &req) {
+  auto eventual = req.m_eventual;
   m_controller->m_pool.make_thread(
-      [data, size, src, tag, &req, this]() {
+      [data, size, src, tag, eventual, this]() {
         recv(data, size, src, tag);
-        req.m_eventual.set_value();
+        eventual->set_value();
       },
       tl::anonymous());
   return 0;

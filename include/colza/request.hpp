@@ -9,10 +9,14 @@ namespace tl = thallium;
 
 class request {
  public:
-  tl::eventual<void> m_eventual;
+  std::shared_ptr<tl::eventual<void>> m_eventual;
 
-  request() = default;
+  request() : m_eventual(std::make_shared<tl::eventual<void>>()) {}
   ~request() = default;
+  request(const request& other) = delete;  // copy constructor
+
+  request(request&& other) = default;             // move constructor
+  request& operator=(request&& other) = default;  // move assignment
 
   int wait();
 };
