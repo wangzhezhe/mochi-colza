@@ -8,8 +8,8 @@ namespace tl = thallium;
 namespace colza {
 // create a newcommunicator and bcast the id to all the controller running in
 // by different processes
-int communicator::duplicate(communicator** newcommptr) {
-  if (*newcommptr != nullptr) {
+int communicator::duplicate(std::shared_ptr<communicator>* newcommptr) {
+  if ((*newcommptr).get() != nullptr) {
     std::cerr << "the newcomm should be a nullptr before duplicate"
               << std::endl;
     return -1;
@@ -33,7 +33,7 @@ int communicator::duplicate(communicator** newcommptr) {
   // TODO add lock?
   this->m_controller->m_communicators[newID] = c;
 
-  *newcommptr = c.get();
+  *newcommptr = c;
   return 0;
 }
 

@@ -31,24 +31,24 @@ void CommSubsetTest::testCommSubset() {
   }
 
   // create subcommunicator
-  colza::communicator* newcomm = nullptr;
+  std::shared_ptr<colza::communicator> newcomm;
   int ret = m_comm->subset(&newcomm, subsetSize, (int32_t*)subrank.data());
   CPPUNIT_ASSERT(ret == 0);
   if (rank >= 1 && rank <= subsetSize) {
-    CPPUNIT_ASSERT(newcomm != nullptr);
-    CPPUNIT_ASSERT(newcomm->size() == subsetSize);
+    CPPUNIT_ASSERT(newcomm.get() != nullptr);
+    CPPUNIT_ASSERT(newcomm.get()->size() == subsetSize);
   }
 
   // test bcast to see if the bcast only works for the subset
   int flag = 0;
   if (newcomm != nullptr) {
-    int newrank = newcomm->rank();
+    int newrank = newcomm.get()->rank();
     if (newrank == 0) {
       flag = 1;
     }
     // the 0 is the id for the new root
     int status =
-        newcomm->bcast(&flag, sizeof(int), 0, colza::COLZA_Bcast::sequential);
+        newcomm.get()->bcast(&flag, sizeof(int), 0, colza::COLZA_Bcast::sequential);
     CPPUNIT_ASSERT(status == 0);
     CPPUNIT_ASSERT(flag == 1);
 
@@ -56,7 +56,7 @@ void CommSubsetTest::testCommSubset() {
       flag = 2;
     }
     // test another implementation for bcast
-    status = newcomm->bcast(&flag, sizeof(int), 0);
+    status = newcomm.get()->bcast(&flag, sizeof(int), 0);
     CPPUNIT_ASSERT(status == 0);
     CPPUNIT_ASSERT(flag == 2);
   }

@@ -11,11 +11,11 @@ namespace colza {
 // current collective implementation assume that the processes are in same group
 // extra argument checking may necessary for bcast/gather/reduction
 // if the group created by subset contains process that across multiple groups
-int communicator::subset(communicator** newcommptr, int arrayLen,
-                         const int32_t* rankArray) {
+int communicator::subset(std::shared_ptr<communicator>* newcommptr,
+                         int arrayLen, const int32_t* rankArray) {
   if (arrayLen == 0) {
     // the newcommunicator is empty if array size is 0
-    *newcommptr = nullptr;
+    (*newcommptr).reset();
     return 0;
   }
   int status;
@@ -25,7 +25,7 @@ int communicator::subset(communicator** newcommptr, int arrayLen,
   bool inSubset = false;
   const int32_t* temp = rankArray;
   // if the process is not located in the group, return nullptr
-  *newcommptr = nullptr;
+  (*newcommptr).reset();
   int newRank;
   // if current rank is not the root 0 and not in rankArray, return
   for (int i = 0; i < arrayLen; i++) {
@@ -91,7 +91,7 @@ int communicator::subset(communicator** newcommptr, int arrayLen,
   this->m_controller->m_communicators[newID] = c;
   // return the subset communicator
   // replace the original content hold by the newcommptr
-  *newcommptr = c.get();
+  *newcommptr = c;
   return 0;
 }
 
