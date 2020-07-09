@@ -87,8 +87,10 @@ int communicator::subset(std::shared_ptr<communicator>* newcommptr,
       this->m_controller, arrayLen, newRank, std::move(subsetMembers)));
   c->m_comm_id = newID;
 
-  // TODO add lock?
-  this->m_controller->m_communicators[newID] = c;
+  {
+    std::lock_guard<tl::mutex> lck(this->m_controller->m_comm_mutex);
+    this->m_controller->m_communicators[newID] = c;
+  }
   // return the subset communicator
   // replace the original content hold by the newcommptr
   *newcommptr = c;

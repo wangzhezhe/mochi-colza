@@ -218,6 +218,7 @@ class controller : public tl::provider<controller> {
 
     ssg_group_id_t       m_ssg_group_id = SSG_GROUP_ID_INVALID;
     tl::pool             m_pool;
+    tl::mutex            m_comm_mutex;
     std::unordered_map<UUID, std::shared_ptr<communicator>, UUID_hash_fn> m_communicators;
     tl::remote_procedure m_p2p_transfer_rpc;
 };

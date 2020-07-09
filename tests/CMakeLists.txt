@@ -31,6 +31,9 @@ target_link_libraries(test_subset ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colz
 add_executable(test_wait main.cpp test_wait.cpp)
 target_link_libraries(test_wait ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
+add_executable(test_destroy main.cpp test_destroy.cpp)
+target_link_libraries(test_destroy ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
+
 add_test(NAME send_recv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_send_recv)
 
 add_test(NAME test_bcast COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 20 ./test_bcast)
@@ -50,3 +53,5 @@ add_test(NAME test_duplicate COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_dup
 add_test(NAME test_subset COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_subset)
 
 add_test(NAME test_wait COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_wait)
+
+add_test(NAME test_destroy COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_destroy)
