@@ -18,7 +18,10 @@ std::shared_ptr<communicator> controller::build_world_communicator() {
             new communicator(const_cast<controller*>(this),
                              size, rank, members));
     temp_comm->m_comm_id = nullid;
+    {
+    std::lock_guard<tl::mutex> lck (m_comm_mutex);
     m_communicators[nullid] = temp_comm;
+    }
     if(rank == 0) 
         masterid = UUID::generate();
     temp_comm->bcast(&masterid, sizeof(masterid), 0);
@@ -26,9 +29,15 @@ std::shared_ptr<communicator> controller::build_world_communicator() {
             new communicator(const_cast<controller*>(this),
                              size, rank, std::move(members)));
     c->m_comm_id = masterid;
+    {
+    std::lock_guard<tl::mutex> lck (m_comm_mutex);
     m_communicators[masterid] = c;
+    }
     temp_comm->barrier();
+    {
+    std::lock_guard<tl::mutex> lck (m_comm_mutex);
     m_communicators.erase(nullid);
+    }
 
     return c;
 }

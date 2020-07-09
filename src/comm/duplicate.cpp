@@ -30,9 +30,10 @@ int communicator::duplicate(std::shared_ptr<communicator>* newcommptr) {
       this->m_controller, this->m_size, this->m_rank, this->m_members));
   c->m_comm_id = newID;
 
-  // TODO add lock?
-  this->m_controller->m_communicators[newID] = c;
-
+  {
+    std::lock_guard<tl::mutex> lck(this->m_controller->m_comm_mutex);
+    this->m_controller->m_communicators[newID] = c;
+  }
   *newcommptr = c;
   return 0;
 }

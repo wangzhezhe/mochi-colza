@@ -92,6 +92,8 @@ class communicator {
 
   int waitAny(int count, request *reqList);
 
+  int destroy();
+
  private:
   communicator(controller *owner, size_t size, size_t rank,
                std::vector<ssg_member_id_t> members)
