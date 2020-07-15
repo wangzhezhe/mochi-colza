@@ -102,14 +102,14 @@ int bcast_sequential(communicator* comm, void* data, size_t nbytes, int root) {
   if (rank == root) {
     for (int dest = 0; dest < comm_size; dest++) {
       if (dest != root) {
-        status = comm->send(data, nbytes, dest, COLZA_BARRIER_TAG);
+        status = comm->send(data, nbytes, dest, COLZA_BCAST_TAG);
         if (status != 0) {
           return status;
         }
       }
     }
   } else {
-    status = comm->recv(data, nbytes, root, COLZA_BARRIER_TAG);
+    status = comm->recv(data, nbytes, root, COLZA_BCAST_TAG);
     if (status != 0) {
       return status;
     }

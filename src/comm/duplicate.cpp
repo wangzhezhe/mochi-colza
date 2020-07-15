@@ -20,7 +20,7 @@ int communicator::duplicate(std::shared_ptr<communicator>* newcommptr) {
     newID = UUID::generate();
   }
   // other controller get the newID by bcast
-  int status = this->bcast(newID.m_data, 16 * sizeof(char), 0);
+  int status = this->bcast(&newID, sizeof(newID), 0);
   if (status != 0) {
     std::cerr << "failed to duplicate becased of the bcast error" << std::endl;
     return status;
