@@ -16,8 +16,10 @@ int communicator::alltoall(void* sendBuffer, size_t sendSize, void* recvBuffer,
   for (int i = 0; i < comm_size; i++) {
     src = (rank - i + comm_size) % comm_size;
     dst = (rank + i) % comm_size;
-    recvaddr = (char*)sendBuffer + recvSize * src;
-    sendaddr = (char*)recvBuffer + sendSize * dst;
+
+    recvaddr = (char*)recvBuffer + src * recvSize;
+    sendaddr = (char*)sendBuffer + dst * sendSize;
+
     status = this->sendrecv(sendaddr, sendSize, dst, COLZA_ALLTOALL_TAG,
                             recvaddr, recvSize, src, COLZA_ALLTOALL_TAG);
 

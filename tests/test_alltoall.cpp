@@ -31,6 +31,7 @@ void AlltoallTest::testAlltoall() {
   for (int i = 0; i < size; i++) {
     senddata[i] = 'A' + (i % 26);
   }
+
   std::vector<char> recvdata(size, 0);
 
   m_comm->alltoall(senddata.data(), sizeof(char), recvdata.data(),
@@ -39,7 +40,7 @@ void AlltoallTest::testAlltoall() {
   // check results
   // the results in rank=0 is AAAA.. rank=1 is BBBB...
   for (int i = 0; i < size; i++) {
-    senddata[i] = 'A' + (rank % 26);
+    CPPUNIT_ASSERT(recvdata[i] = 'A' + (rank % 26));
   }
 }
 
@@ -65,6 +66,6 @@ void AlltoallTest::testIAlltoall() {
 
   // check results
   for (int i = 0; i < size; i++) {
-    senddata[i] = 'A' + (rank % 26);
+    CPPUNIT_ASSERT(recvdata[i] == 'A' + (rank % 26));
   }
 }

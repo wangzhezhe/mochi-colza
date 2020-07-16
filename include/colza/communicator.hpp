@@ -9,9 +9,9 @@
 #include <colza/uuid.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <list>
 #include <string>
 #include <thallium.hpp>
-#include <unordered_map>
 #include <vector>
 
 namespace colza {
@@ -84,9 +84,10 @@ class communicator {
   int ialltoall(void *sendBuffer, size_t sendSize, void *recvBuffer,
                 size_t recvSize, request &req);
 
-  int duplicate(std::shared_ptr<communicator>* newcommptr);
+  int duplicate(std::shared_ptr<communicator> *newcommptr);
 
-  int subset(std::shared_ptr<communicator>* newcommptr, int arrayLen, const int32_t *rankArray);
+  int subset(std::shared_ptr<communicator> *newcommptr, int arrayLen,
+             const int32_t *rankArray);
 
   int wait(request &req);
 
@@ -118,7 +119,32 @@ class communicator {
     tl::eventual<void> m_eventual;
   };
 
-  std::unordered_map<uint64_t, p2p_request *> m_pending_p2p_requests;
+  struct key_req {
+    key_req(int32_t source, int32_t tag, p2p_request *req)
+        : m_source(source), m_tag(tag), m_req(req){};
+    int32_t m_source;
+    int32_t m_tag;
+    p2p_request *m_req;
+    ~key_req(){};
+
+    // copy constructor
+    key_req(const key_req &other) = default;
+
+    // move constructor
+    key_req(key_req &&other) = default;
+
+    // assignment operator
+    key_req &operator=(const key_req &t) = default;
+
+    // move assignment operator
+    key_req &operator=(key_req &&other) = default;
+  };
+
+  std::list<key_req>::iterator req_exist(std::list<key_req> &req_list, int src,
+                                         int tag);
+
+  // std::unordered_map<uint64_t, p2p_request *> m_pending_p2p_requests;
+  std::list<key_req> m_pending_p2p_requests;
   tl::mutex m_pending_p2p_requests_mtx;
   tl::condition_variable m_pending_p2p_requests_cv;
 };
