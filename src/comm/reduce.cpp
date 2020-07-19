@@ -31,8 +31,11 @@ int communicator::reduce(const void *sendBuffer, void *recvBuffer, size_t count,
   if (rank != root && recvBuffer != nullptr) {
     mallocRcvbuffer = true;
     recvBuffer = (void *)malloc(elementSize * count);
-    memcpy(recvBuffer, sendBuffer, elementSize * count);
   }
+  //recv buffer should be reinnitilized by sendBuffer for all ranks
+  //this aims to avoid the init value of the recvbuffer to influence the results
+  memcpy(recvBuffer, sendBuffer, elementSize * count);
+
 
   mask = 0x1;
   lroot = root;

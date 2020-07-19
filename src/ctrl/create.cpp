@@ -2,6 +2,7 @@
 
 #include "colza/communicator.hpp"
 #include "colza/controller.hpp"
+#include "colza/types.hpp"
 
 namespace colza {
 
@@ -30,7 +31,7 @@ controller::controller(tl::engine* engine, uint16_t provider_id,
   }
 }
 
-void controller::init(ssg_group_id_t gid) { m_ssg_group_id = gid; }
+void controller::init(ssg_group_id_t gid) { m_ssg_group_id = gid; init_ops_map(); }
 
 controller* controller::create(tl::engine* engine, uint16_t provider_id,
                                const tl::pool& pool) {
