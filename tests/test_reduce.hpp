@@ -15,6 +15,10 @@ class ReduceTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(testIReduceSumInt64Vector);
   CPPUNIT_TEST(testAllReduceSumInt64Vector);
   CPPUNIT_TEST(testIAllReduceSumInt64Vector);
+
+  CPPUNIT_TEST(testReduceMAXDouble);
+  CPPUNIT_TEST(testReduceMINDouble);
+
   CPPUNIT_TEST_SUITE_END();
 
  public:
@@ -27,6 +31,9 @@ class ReduceTest : public CppUnit::TestFixture {
   void testIReduceSumInt64Vector();
   void testAllReduceSumInt64Vector();
   void testIAllReduceSumInt64Vector();
+
+  void testReduceMAXDouble();
+  void testReduceMINDouble();
 };
 
 #endif

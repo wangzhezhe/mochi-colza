@@ -218,3 +218,58 @@ void ReduceTest::testIAllReduceSumInt64Vector() {
     CPPUNIT_ASSERT(expectedValue[index] == recvData[index]);
   }
 }
+
+void ReduceTest::testReduceMAXDouble() {
+  MPI_Barrier(MPI_COMM_WORLD);
+  int rank = m_comm->rank();
+  if (rank == 0) {
+    std::cout << "---test testReduceMAXDouble" << std::endl;
+  }
+  int size = m_comm->size();
+  std::vector<double> sendData(6, 0.1 + rank);
+  // the recv data should be initilized as empty value
+  std::vector<double> recvData(6, 0.0);
+
+  colza::COLZA_Operation_Func funcptr =
+      colza::get_ops_func(colza::COLZA_Reduction_Op::MAX, COLZA_DOUBLE);
+
+  CPPUNIT_ASSERT(funcptr != nullptr);
+
+  int status = m_comm->allreduce((void*)sendData.data(), (void*)recvData.data(),
+                                 6, sizeof(double), funcptr);
+
+  CPPUNIT_ASSERT(status == 0);
+
+  // check results for every rank
+  for (int i = 0; i < recvData.size(); i++) {
+    // the max value of the rank is size - 1
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(recvData[i], 0.1 + 1.0 * (size - 1), 0.000001);
+  }
+}
+
+void ReduceTest::testReduceMINDouble() {
+  MPI_Barrier(MPI_COMM_WORLD);
+  int rank = m_comm->rank();
+  if (rank == 0) {
+    std::cout << "---test testReduceMINDouble" << std::endl;
+  }
+  int size = m_comm->size();
+  std::vector<double> sendData(256, 0.1 + rank);
+  // the recv data should be initilized as empty value
+  // if the recv data are processed by the operation func???
+  std::vector<double> recvData(256, 0.0);
+
+  colza::COLZA_Operation_Func funcptr =
+      colza::get_ops_func(colza::COLZA_Reduction_Op::MIN, COLZA_DOUBLE);
+
+  CPPUNIT_ASSERT(funcptr != nullptr);
+
+  int status = m_comm->allreduce((void*)sendData.data(), (void*)recvData.data(),
+                                 256, sizeof(double), funcptr);
+
+  CPPUNIT_ASSERT(status == 0);
+  // check results for root
+  for (int i = 0; i < recvData.size(); i++) {
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(recvData[i], 0.1, 0.000001);
+  }
+}
