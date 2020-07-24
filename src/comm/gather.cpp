@@ -19,7 +19,9 @@ int communicator::gather(const void *sendBuffer, size_t sendSize,
       // recv from other process
       if (i == rank) {
         // do the local copy for the root process
-        memcpy((char *)recvBuffer + i * sendSize, sendBuffer, sendSize);
+        if (sendBuffer != COLZA_IN_PLACE) {
+          memcpy((char *)recvBuffer + i * sendSize, sendBuffer, sendSize);
+        }
         continue;
       }
       status = this->recv((char *)recvBuffer + i * sendSize, sendSize, i,

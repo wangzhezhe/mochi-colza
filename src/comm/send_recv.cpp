@@ -15,6 +15,10 @@ int communicator::send(const void *data, size_t size, int dest, int tag) {
       m_controller->member_id_to_provider_handle(m_members[dest]);
   // create bulk handle to expose the data
   std::vector<std::pair<void *, size_t>> segment(1);
+  if(size==0){
+    // do not send the rpc if the size is zero
+    return 0;
+  }
   segment[0].first = const_cast<void *>(data);
   segment[0].second = size;
   tl::bulk local_bulk =
@@ -59,12 +63,17 @@ std::list<communicator::key_req>::iterator communicator::req_exist(
 
 int communicator::recv(void *data, size_t size, int src, int tag) {
   // create local bulk handle
+  if(size==0){
+    // do not recv the rpc if the size is zero
+    return 0;
+  }
   std::vector<std::pair<void *, size_t>> segment(1);
   segment[0].first = const_cast<void *>(data);
   segment[0].second = size;
   tl::bulk local_bulk =
       m_controller->get_engine().expose(segment, tl::bulk_mode::write_only);
   p2p_request *req_ptr = nullptr;
+
   // lock the pending request map to see if there is a matching request
   {
     std::unique_lock<tl::mutex> lock(m_pending_p2p_requests_mtx);

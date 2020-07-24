@@ -37,26 +37,31 @@ target_link_libraries(test_destroy ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} col
 add_executable(test_anysource main.cpp test_anysource.cpp)
 target_link_libraries(test_anysource ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
+add_executable(test_inplace main.cpp test_inplace.cpp)
+target_link_libraries(test_inplace ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
+
 add_test(NAME send_recv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_send_recv)
 
-add_test(NAME test_bcast COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 20 ./test_bcast)
+add_test(NAME test_bcast COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_bcast)
 
-add_test(NAME test_barrier COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_barrier)
+add_test(NAME test_barrier COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_barrier)
 
-add_test(NAME test_reduce COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_reduce)
+add_test(NAME test_reduce COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_reduce)
 
-add_test(NAME test_gather COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_gather)
+add_test(NAME test_gather COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_gather)
 
-add_test(NAME test_gatherv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_gatherv)
+add_test(NAME test_gatherv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_gatherv)
 
-add_test(NAME test_alltoall COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_alltoall)
+add_test(NAME test_alltoall COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_alltoall)
 
 add_test(NAME test_duplicate COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_duplicate)
 
-add_test(NAME test_subset COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 10 ./test_subset)
+add_test(NAME test_subset COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_subset)
 
 add_test(NAME test_wait COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_wait)
 
 add_test(NAME test_destroy COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_destroy)
 
 add_test(NAME test_anysource COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_anysource)
+
+add_test(NAME test_inplace COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_inplace)
