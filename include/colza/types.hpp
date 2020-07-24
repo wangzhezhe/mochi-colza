@@ -5,12 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-
-namespace colza {
-
-enum class COLZA_Bcast { sequential, binomial };
-
-enum class COLZA_Barrier { bcast, dissemination };
+#define COLZA_IN_PLACE  (void *) -1
 
 // define the datatype and the operation type to index the function
 // refer to the vtk data type
@@ -31,6 +26,12 @@ enum class COLZA_Barrier { bcast, dissemination };
 #define COLZA_OPAQUE 14
 #define COLZA_LONG_LONG 16
 #define COLZA_UNSIGNED_LONG_LONG 17
+
+namespace colza {
+
+enum class COLZA_Bcast { sequential, binomial };
+
+enum class COLZA_Barrier { bcast, dissemination };
 
 // define the operation for data reduction
 enum COLZA_Reduction_Op : uint32_t{

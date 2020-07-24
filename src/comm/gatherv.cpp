@@ -13,6 +13,7 @@ int communicator::gatherv(const void *sendBuffer, void *recvBuffer,
   int comm_size = this->size();
   int rank = this->rank();
 
+  // the recv buffer is only siginificant for the root process
   if (rank == root) {
     for (int i = 0; i < comm_size; i++) {
       // recv from other process
@@ -20,16 +21,21 @@ int communicator::gatherv(const void *sendBuffer, void *recvBuffer,
         // do the local copy for the root process
         // offset[i] represents the number of the element relative to the
         // recvBuffer for rank i
-        memcpy((char *)recvBuffer + offsets[i] * elementSize, sendBuffer,
-               recvCounts[i] * elementSize);
+        if (sendBuffer != COLZA_IN_PLACE) {
+          memcpy((char *)recvBuffer + offsets[i] * elementSize, sendBuffer,
+                 recvCounts[i] * elementSize);
+        }
         continue;
       }
-      status = this->recv((char *)recvBuffer + offsets[i] * elementSize,
-                          sendCounts * elementSize, i, COLZA_GATHERV_TAG);
-      if (status != 0) {
-        std::cerr << "faild to gatherv because of rcv failure for rank " << rank
-                  << " with status " << status << std::endl;
-        return status;
+      // recv from the other processes if the send account is not zero
+      if (recvCounts[i] != 0) {
+        status = this->recv((char *)recvBuffer + offsets[i] * elementSize,
+                            sendCounts * elementSize, i, COLZA_GATHERV_TAG);
+        if (status != 0) {
+          std::cerr << "faild to gatherv because of rcv failure for rank "
+                    << rank << " with status " << status << std::endl;
+          return status;
+        }
       }
     }
   } else {

@@ -28,14 +28,16 @@ int communicator::reduce(const void *sendBuffer, void *recvBuffer, size_t count,
   // I have to allocate a temporary one
   tempSrc = (void *)malloc(elementSize * count);
 
-  if (rank != root && recvBuffer != nullptr) {
+  if (rank != root && recvBuffer == nullptr) {
     mallocRcvbuffer = true;
     recvBuffer = (void *)malloc(elementSize * count);
   }
-  //recv buffer should be reinnitilized by sendBuffer for all ranks
-  //this aims to avoid the init value of the recvbuffer to influence the results
-  memcpy(recvBuffer, sendBuffer, elementSize * count);
-
+  // recv buffer should be reinnitilized by sendBuffer if it is not the
+  // COLZA_IN_PLACE for all ranks this aims to avoid the init value of the
+  // recvbuffer to influence the results
+  if ((rank != root) || sendBuffer != COLZA_IN_PLACE) {
+    memcpy(recvBuffer, sendBuffer, elementSize * count);
+  }
 
   mask = 0x1;
   lroot = root;

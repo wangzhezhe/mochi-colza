@@ -16,13 +16,12 @@ void DestroyTest::setUp() {}
 void DestroyTest::tearDown() {}
 
 void DestroyTest::testDestroy() {
+  int rank = m_comm->rank();
+  if (rank == 0) {
+    std::cout << "---test testDestroy" << std::endl;
+  }
   // destroy
   int ret = m_comm->destroy();
   CPPUNIT_ASSERT(ret == 0);
-
-  // the return value is supposed to be -1
-  // if there are no registerd communicator
-  int c = 'c';
-  ret = m_comm->send(&c, sizeof(char), 0, 12345);
-  CPPUNIT_ASSERT(ret == -1);
+  return;
 }
