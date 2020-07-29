@@ -15,12 +15,14 @@ int communicator::waitAny(int count, request* reqList) {
   size_t i;
   int ret;
   bool flag = false;
-  int has_pending_requests = 0;
+  bool has_pending_requests;
 try_again:
+  has_pending_requests = false;
   for (i = 0; i < count; i++) {
     has_pending_requests = 1;
     if(!reqList[i].m_eventual)
         continue;
+    has_pending_requests = true;
     flag = reqList[i].m_eventual->test();
     if (flag) {
       this->wait(reqList[i]);
@@ -31,7 +33,7 @@ try_again:
   if (has_pending_requests) goto try_again;
   // there is not pending request
   // TODO add more error status
-  return count;
+  return -1;
 }
 
 }  // namespace colza
