@@ -1,3 +1,4 @@
+#include <iostream>
 #include <algorithm>
 #include <thallium.hpp>
 
@@ -33,10 +34,13 @@ int communicator::isend(const void *data, size_t size, int dest, int tag,
                         request &req) {
   request tmp(std::make_shared<tl::eventual<void>>());
   auto eventual = tmp.m_eventual;
+  std::cout << "ISEND " << m_rank << " ==> " << dest << ", tag=" << tag
+      << ", size=" << size << ", req=" << (void*)eventual.get() << std::endl;
   m_controller->m_pool.make_thread(
       [data, size, dest, tag, eventual, this]() {
         send(data, size, dest, tag);
         eventual->set_value();
+        std::cout << "ISEND REQ " << (void*)eventual.get() << " marked as completed" << std::endl;
       },
       tl::anonymous());
   req = std::move(tmp);
@@ -102,10 +106,13 @@ int communicator::irecv(void *data, size_t size, int src, int tag,
                         request &req) {
   request tmp(std::make_shared<tl::eventual<void>>());
   auto eventual = tmp.m_eventual;
+  std::cout << "IRECV " << m_rank << " <== " << src << ", tag=" << tag
+      << ", size=" << size << ", req=" << (void*)eventual.get() << std::endl;
   m_controller->m_pool.make_thread(
       [data, size, src, tag, eventual, this]() {
         recv(data, size, src, tag);
         eventual->set_value();
+        std::cout << "IRECV REQ " << (void*)eventual.get() << " marked as completed" << std::endl;
       },
       tl::anonymous());
   req = std::move(tmp);

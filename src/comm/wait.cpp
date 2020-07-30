@@ -5,7 +5,10 @@
 namespace colza {
 int communicator::wait(request& req) {
     if(!req) return -1;
+    void *p = (void*)req.m_eventual.get();
+    std::cout << "WAIT started rank=" << m_rank << ", req=" << p << std::endl;
     req.m_eventual->wait();
+    std::cout << "WAIT completed rank=" << m_rank << ", req=" << p << std::endl;
     return 0;
 }
 
@@ -16,6 +19,12 @@ int communicator::waitAny(int count, request* reqList) {
   int ret;
   bool flag = false;
   bool has_pending_requests;
+  std::cout << "WAITANY started rank=" << m_rank << ", count=" << count << std::endl;
+  std::cout << "WAITANY rank=" << m_rank << " requests={";
+  for(i=0; i<count; i++) {
+        std::cout << (void*)reqList[i].m_eventual.get() << " ";
+  }
+  std::cout << " }" << std::endl;
 try_again:
   has_pending_requests = false;
   for (i = 0; i < count; i++) {
