@@ -142,8 +142,8 @@ class controller : public tl::provider<controller> {
      */
     static controller* join(tl::engine* engine,
                             const std::string& descriptor,
-                            uint16_t provider_id,
-                            const tl::pool& pool);
+                            uint16_t provider_id = 0,
+                            const tl::pool& pool = tl::pool());
 
     /**
      * @brief Destructor.
