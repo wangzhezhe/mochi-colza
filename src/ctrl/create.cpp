@@ -31,7 +31,12 @@ controller::controller(tl::engine* engine, uint16_t provider_id,
   }
 }
 
-void controller::init(ssg_group_id_t gid) { m_ssg_group_id = gid; init_ops_map(); }
+void controller::init(ssg_group_id_t gid) {
+    m_ssg_group_id = gid;
+    m_leader_id = ssg_get_group_member_id_from_rank(gid, 0);
+    m_this_id = ssg_get_self_id(get_engine().get_margo_instance());
+    init_ops_map();
+}
 
 controller* controller::create(tl::engine* engine, uint16_t provider_id,
                                const tl::pool& pool) {
@@ -119,12 +124,20 @@ controller* controller::join(tl::engine* engine, const std::string& descriptor,
           descriptor.c_str(),
           descriptor.size(),
           &num_addrs, &gid);
-  int ret = ssg_group_join_target(
+  // we need to get the rank of the leader before joining,
+  // otherwise this process could become the leader
+  int ret = ssg_group_observe(engine->get_margo_instance(), gid);
+  // TODO check return value
+  ssg_member_id_t leader = ssg_get_group_member_id_from_rank(gid, 0);
+  ret = ssg_group_unobserve(gid);
+  // actually join the group
+  ret = ssg_group_join_target(
           engine->get_margo_instance(),
           gid, nullptr, controller::group_membership_update,
           static_cast<void*>(ctrl));
   // TODO check return value
   ctrl->init(gid);
+  ctrl->m_leader_id = leader;
   return ctrl;
 }
 

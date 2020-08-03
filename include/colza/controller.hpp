@@ -217,6 +217,9 @@ class controller : public tl::provider<controller> {
     tl::provider_handle member_id_to_provider_handle(ssg_member_id_t member_id);
 
     ssg_group_id_t       m_ssg_group_id = SSG_GROUP_ID_INVALID;
+    ssg_member_id_t      m_leader_id;
+    ssg_member_id_t      m_this_id;
+
     tl::pool             m_pool;
     tl::mutex            m_comm_mutex;
     std::unordered_map<UUID, std::shared_ptr<communicator>, UUID_hash_fn> m_communicators;
