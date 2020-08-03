@@ -156,7 +156,12 @@ int communicator::on_p2p_transfer(const tl::endpoint &ep, tl::bulk &remote_bulk,
     m_pending_p2p_requests.push_back(key_req(source, tag, &req));
   }
 
-  m_pending_p2p_requests_cv.notify_one();
+  //for the test case isend_irecv_complex
+  //it is important to use notify_all instead of the notify_one
+  //otherwise, the irecv coresponds with the isend might not be notified precisely
+  //and the program will hang there
+  m_pending_p2p_requests_cv.notify_all();
+  
   req.m_eventual.wait();
   return 0;
 }
