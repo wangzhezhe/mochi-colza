@@ -40,6 +40,9 @@ target_link_libraries(test_anysource ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} c
 add_executable(test_inplace main.cpp test_inplace.cpp)
 target_link_libraries(test_inplace ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
+add_executable(test_isend_irecv_complex main.cpp test_isend_irecv_complex.cpp)
+target_link_libraries(test_isend_irecv_complex ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
+
 add_test(NAME send_recv COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 2 ./test_send_recv)
 
 add_test(NAME test_bcast COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_bcast)
@@ -65,3 +68,5 @@ add_test(NAME test_destroy COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_destr
 add_test(NAME test_anysource COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_anysource)
 
 add_test(NAME test_inplace COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_inplace)
+
+add_test(NAME test_isend_irecv_complex COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_isend_irecv_complex)

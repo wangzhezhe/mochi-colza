@@ -19,7 +19,6 @@ int communicator::waitAny(int count, request* reqList) {
 try_again:
   has_pending_requests = false;
   for (i = 0; i < count; i++) {
-    has_pending_requests = 1;
     if(!reqList[i].m_eventual)
         continue;
     has_pending_requests = true;
