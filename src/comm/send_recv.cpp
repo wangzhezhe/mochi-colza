@@ -80,17 +80,15 @@ int communicator::recv(void *data, size_t size, int src, int tag) {
     auto key_equal = req_exist(m_pending_p2p_requests, src, tag);
     if (key_equal == m_pending_p2p_requests.end()) {
       // not find, wait
-      m_pending_p2p_requests_cv.wait(lock, [this, src, tag]() {
-        auto key_equal_inner = req_exist(m_pending_p2p_requests, src, tag);
-        return (key_equal_inner != m_pending_p2p_requests.end());
+      m_pending_p2p_requests_cv.wait(lock, [this, src, tag, &key_equal]() {
+        key_equal = req_exist(m_pending_p2p_requests, src, tag);
+        return (key_equal != m_pending_p2p_requests.end());
       });
     };
 
-    // when there are elements
-    auto it = req_exist(m_pending_p2p_requests, src, tag);
     // hold the pointer and delete the entry
-    req_ptr = it->m_req;
-    m_pending_p2p_requests.erase(it);
+    req_ptr = key_equal->m_req;
+    m_pending_p2p_requests.erase(key_equal);
   }
   // TODO check that size matches req_ptr->m_size
   local_bulk << req_ptr->m_bulk->on(*req_ptr->m_endpoint);
