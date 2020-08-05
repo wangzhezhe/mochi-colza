@@ -17,6 +17,8 @@ option(ENABLE_TESTS    "Build tests. May require CppUnit_ROOT" OFF)
 option(ENABLE_EXAMPLES "Build examples" OFF)
 option(ENABLE_MPI      "Build with MPI support" ON)
 
+add_definitions(-ggdb)
+
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
      "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

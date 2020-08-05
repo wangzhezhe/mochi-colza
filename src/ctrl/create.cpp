@@ -10,8 +10,9 @@ controller::controller(tl::engine* engine, uint16_t provider_id,
                        const tl::pool& pool)
     : tl::provider<controller>(*engine, provider_id),
       m_pool(pool),
-      m_p2p_transfer_rpc(
-          define("colza_p2p_transfer", &controller::on_p2p_transfer, m_pool)) {
+      m_p2p_transfer_rpc(define("colza_p2p_transfer", &controller::on_p2p_transfer, m_pool)),
+      m_join_rpc(define("colza_join", &controller::on_join, m_pool))
+{
   // pushing pre-finalize callback that destroys the SSG group
   get_engine().push_prefinalize_callback(this, [ctrl = this]() { });
   // pushing finalize callback that destroys the controller
@@ -83,8 +84,17 @@ controller* controller::join(tl::engine* engine, const std::string& leader_addr,
 
 controller* controller::join(tl::engine* engine, const tl::endpoint& leader_endpoint,
                              uint16_t provider_id, const tl::pool& pool) {
-    // TODO
-    return nullptr;
+    auto ctrl = new controller(engine, provider_id, pool);
+    auto ph = tl::provider_handle(leader_endpoint, provider_id);
+    bool result = ctrl->m_join_rpc.on(ph)();
+    if(!result) {
+        delete ctrl;
+        throw std::runtime_error("Could not join leader controller");
+    } else {
+        ctrl->m_leader_addr = static_cast<std::string>(leader_endpoint);
+        ctrl->m_this_addr = static_cast<std::string>(engine->self());
+    }
+    return ctrl;
 }
 
 }  // namespace colza

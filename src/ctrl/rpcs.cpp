@@ -18,4 +18,15 @@ void controller::on_p2p_transfer(const tl::request& req,
     }
 }
 
+void controller::on_join(const tl::request& req) {
+    if(m_leader_addr == m_this_addr) {
+        std::lock_guard<tl::mutex> gard(m_members_mutex);
+        auto ep = req.get_endpoint();
+        m_pending_members.emplace_back(ep, get_provider_id());
+        req.respond(true);
+    } else {
+        req.respond(false);
+    }
+}
+
 }

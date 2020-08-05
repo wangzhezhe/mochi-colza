@@ -9,7 +9,14 @@ std::shared_ptr<communicator> controller::build_world_communicator() {
     std::shared_ptr<communicator> world_comm;
     if(m_leader_addr == m_this_addr) { // master
         // create a copy of the current list of members
+        { std::lock_guard<tl::mutex> lock(m_members_mutex);
+          for(unsigned i = 0; i < m_pending_members.size(); i++) {
+            m_members.push_back(std::move(m_pending_members[i]));
+          }
+          m_pending_members.clear();
+        }
         auto members = m_members;
+        
         int size = members.size();
         // create or modify the world communicator
         {   std::lock_guard<tl::mutex> lck (m_comm_mutex);

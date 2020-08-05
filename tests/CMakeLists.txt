@@ -10,8 +10,8 @@ target_link_libraries(test_bcast ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza
 add_executable(test_barrier main.cpp test_barrier.cpp)
 target_link_libraries(test_barrier ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
-#add_executable(test_join main_join.cpp test_join.cpp)
-#target_link_libraries(test_join ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
+add_executable(test_join main_join.cpp test_join.cpp)
+target_link_libraries(test_join ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
 
 add_executable(test_reduce main.cpp test_reduce.cpp)
 target_link_libraries(test_reduce ${CPPUNIT_LIBRARIES} ${MPI_CXX_LIBRARIES} colza)
@@ -74,4 +74,4 @@ add_test(NAME test_inplace COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_inpla
 
 add_test(NAME test_isend_irecv_complex COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_isend_irecv_complex)
 
-#add_test(NAME test_join COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_join)
+add_test(NAME test_join COMMAND ${RUNCOMMAND} ${PARAMETERS} -n 5 ./test_join)

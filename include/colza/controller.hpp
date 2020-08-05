@@ -171,7 +171,7 @@ class controller : public tl::provider<controller> {
     controller(tl::engine* engine, uint16_t provider_id=0, const tl::pool& pool=tl::pool());
 
     /**
-     * @brief RPC handlers executed when a remote process calls send on a communicator.
+     * @brief RPC handler executed when a remote process calls send on a communicator.
      *
      * @param req Thallium request.
      * @param comm_id Communicator id.
@@ -181,13 +181,23 @@ class controller : public tl::provider<controller> {
      */
     void on_p2p_transfer(const tl::request& req, const UUID& comm_id, tl::bulk& bulk, size_t size, int32_t source, int32_t tag);
 
+    /**
+     * @brief RPC handler executed when a remote process joins the group.
+     *
+     * @param req Thallium request.
+     */
+    void on_join(const tl::request& req);
+
     std::unordered_map<UUID,
         std::shared_ptr<communicator>,
         UUID_hash_fn>                m_communicators;
     tl::mutex                        m_comm_mutex;
     tl::pool                         m_pool;
     tl::remote_procedure             m_p2p_transfer_rpc;
+    tl::remote_procedure             m_join_rpc;
     std::vector<tl::provider_handle> m_members;
+    std::vector<tl::provider_handle> m_pending_members;
+    tl::mutex                        m_members_mutex;
     std::string                      m_leader_addr;
     std::string                      m_this_addr;
 
