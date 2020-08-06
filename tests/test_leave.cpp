@@ -45,7 +45,7 @@ void LeaveTest::testLeave() {
 
   for(unsigned i=0; i < m_leave_order.size(); i++) {
     tl::thread::sleep(*engine, 200);
-    m_comm = m_controller->build_world_communicator();
+    m_comm = m_controller->synchronize();
     m_comm->barrier();
     if(m_rank == m_leave_order[i]) {
         if(m_rank != 0) {

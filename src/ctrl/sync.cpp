@@ -4,7 +4,7 @@
 
 namespace colza {
     
-std::shared_ptr<communicator> controller::build_world_communicator() {
+std::shared_ptr<communicator> controller::synchronize() {
     UUID masterid; // masterid = 0
     std::shared_ptr<communicator> world_comm;
 

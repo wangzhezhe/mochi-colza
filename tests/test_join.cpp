@@ -44,7 +44,7 @@ void JoinTest::testJoin() {
         m_controller = colza::controller::join(engine, m_leader_addr);
   }
   while(true) {
-    m_comm = m_controller->build_world_communicator();
+    m_comm = m_controller->synchronize();
     x = m_comm->size() == m_size ? 1 : 0;
     if(m_rank == 0) std::cout << "Current number of processes is " << m_comm->size() << std::endl;
     tl::thread::sleep(*engine, 200);

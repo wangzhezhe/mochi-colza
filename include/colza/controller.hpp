@@ -146,30 +146,35 @@ class controller : public tl::provider<controller> {
     controller& operator=(controller&&) = default;
 
     /**
-     * @brief Gets a communicator gathering all the members of the SSG group
+     * @brief Gets a communicator gathering all the members of the group
      * managed by this controller. This communicator can be seen as the
      * equivalent of MPI_COMM_WORLD.
      *
      * @return a pointer to a communicator.
      */
-    std::shared_ptr<communicator> build_world_communicator();
+    std::shared_ptr<communicator> world() const;
 
     /**
-     * @brief Creates a descriptor that can be used by other processes
-     * to call controller::join. Note that descriptors change as the group members
-     * join and leave, so make sure to use controller::join on a fairly recent
-     * version of the group descriptor.
-     *
-     * @return descriptor.
+     * @brief Synchronize the members of the group to update the world communicator.
+     * This function also returns said world communicator.
+     * Note that this function does not invalidate any std::shared_ptr<communicator>
+     * that the user program may be holding onto.
+     */
+    std::shared_ptr<communicator> synchronize();
+
+    /**
+     * @brief Makes the controller leave the group. The leader is not allowed
+     * to leave the group.
+     */
+    void leave();
+
+    /**
+     * @brief Returns the string address of the leader.
      */
     const std::string& leader() const {
         return m_leader_addr;
     }
 
-    /**
-     * @brief Makes the controller leave the group.
-     */
-    void leave();
 
     private:
 

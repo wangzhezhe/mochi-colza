@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
   tl::thread::sleep(*engine, 1000);
   // create the communicator and the controller
   m_controller = colza::controller::create(engine, MPI_COMM_WORLD);
-  m_comm = m_controller->build_world_communicator();
+  m_comm = m_controller->synchronize();
 
   // Get the top level suite from the registry
   CppUnit::Test* suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
