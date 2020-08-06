@@ -16,7 +16,8 @@ enable_testing ()
 option(ENABLE_TESTS    "Build tests. May require CppUnit_ROOT" OFF)
 option(ENABLE_EXAMPLES "Build examples" OFF)
 option(ENABLE_MPI      "Build with MPI support" ON)
-option(ENABLE_PMIX     "Build with PMIx support" OFF)
+
+add_definitions(-ggdb)
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
@@ -43,13 +44,6 @@ else(ENABLE_MPI)
     set(COLZA_HAS_MPI 0)
 endif(ENABLE_MPI)
 
-if(ENABLE_PMIX)
-    find_package(PMIx REQUIRED)
-    set(COLZA_HAS_PMIX 1)
-else(ENABLE_PMIX)
-    set(COLZA_HAS_PMIX 0)
-endif(ENABLE_PMIX)
-
 find_package (CppUnit)
 if (CPPUNIT_FOUND)
     message(STATUS "CppUnit found, unit tests will be compiled")
@@ -61,7 +55,6 @@ endif (CPPUNIT_FOUND)
 
 include (xpkg-import)
 find_package (thallium REQUIRED)
-xpkg_import_module (ssg REQUIRED ssg)
 xpkg_import_module (uuid REQUIRED uuid)
 
 

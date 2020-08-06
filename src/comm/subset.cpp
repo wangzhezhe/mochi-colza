@@ -74,8 +74,8 @@ int communicator::subset(std::shared_ptr<communicator>* newcommptr,
     }
   }
 
-  // generate std::vector<ssg_member_id_t> members for subset
-  std::vector<ssg_member_id_t> subsetMembers(arrayLen);
+  // generate std::vector<tl::provider_handle> members for subset
+  decltype(m_members) subsetMembers(arrayLen);
   const int32_t* tempdst = rankArray;
   for (int i = 0; i < arrayLen; i++) {
     subsetMembers[i] = this->m_members[*tempdst];

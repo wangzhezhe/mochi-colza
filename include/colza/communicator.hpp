@@ -1,9 +1,6 @@
 #ifndef __COLZA_COMM_HPP
 #define __COLZA_COMM_HPP
 
-#include <mpi.h>
-#include <ssg.h>
-
 #include <colza/tags.hpp>
 #include <colza/types.hpp>
 #include <colza/uuid.hpp>
@@ -97,7 +94,7 @@ class communicator {
 
  private:
   communicator(controller *owner, size_t size, size_t rank,
-               std::vector<ssg_member_id_t> members)
+               std::vector<tl::provider_handle> members)
       : m_controller(owner),
         m_size(size),
         m_rank(rank),
@@ -110,7 +107,7 @@ class communicator {
   UUID m_comm_id;
   size_t m_size;
   size_t m_rank;
-  std::vector<ssg_member_id_t> m_members;
+  std::vector<tl::provider_handle> m_members;
 
   struct p2p_request {
     tl::bulk *m_bulk;
@@ -143,7 +140,6 @@ class communicator {
   std::list<key_req>::iterator req_exist(std::list<key_req> &req_list, int src,
                                          int tag);
 
-  // std::unordered_map<uint64_t, p2p_request *> m_pending_p2p_requests;
   std::list<key_req> m_pending_p2p_requests;
   tl::mutex m_pending_p2p_requests_mtx;
   tl::condition_variable m_pending_p2p_requests_cv;

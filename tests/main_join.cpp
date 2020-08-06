@@ -11,18 +11,15 @@
 namespace tl = thallium;
 
 tl::engine* engine;
-colza::controller* m_controller;
-std::shared_ptr<colza::communicator> m_comm;
 
 int main(int argc, char* argv[]) {
   MPI_Init(&argc, &argv);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   engine = new tl::engine("ofi+tcp", THALLIUM_SERVER_MODE, true, 4);
   // Sleeping is needed to make sure other processes have
   // initialized SSG and are ready to respond
   tl::thread::sleep(*engine, 1000);
-  // create the communicator and the controller
-  m_controller = colza::controller::create(engine, MPI_COMM_WORLD);
-  m_comm = m_controller->synchronize();
 
   // Get the top level suite from the registry
   CppUnit::Test* suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();

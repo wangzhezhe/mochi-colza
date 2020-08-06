@@ -11,8 +11,7 @@ namespace tl = thallium;
 
 int communicator::send(const void *data, size_t size, int dest, int tag) {
   // request endpoint from member id
-  tl::provider_handle dest_pr =
-      m_controller->member_id_to_provider_handle(m_members[dest]);
+  const auto& dest_pr = m_members[dest];
   // create bulk handle to expose the data
   std::vector<std::pair<void *, size_t>> segment(1);
   if(size==0){

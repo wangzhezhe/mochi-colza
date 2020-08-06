@@ -6,22 +6,15 @@
 
 namespace colza {
 
-std::string controller::default_ssg_group_name = "colza";
-ssg_group_config controller::default_ssg_group_config =
-    SSG_GROUP_CONFIG_INITIALIZER;
-
 controller::controller(tl::engine* engine, uint16_t provider_id,
                        const tl::pool& pool)
     : tl::provider<controller>(*engine, provider_id),
-      m_ssg_group_id(SSG_GROUP_ID_INVALID),
       m_pool(pool),
-      m_p2p_transfer_rpc(
-          define("colza_p2p_transfer", &controller::on_p2p_transfer, m_pool)) {
+      m_p2p_transfer_rpc(define("colza_p2p_transfer", &controller::on_p2p_transfer, m_pool)),
+      m_join_rpc(define("colza_join", &controller::on_join, m_pool))
+{
   // pushing pre-finalize callback that destroys the SSG group
-  get_engine().push_prefinalize_callback(this, [ctrl = this]() {
-    ssg_group_destroy(ctrl->m_ssg_group_id);
-    ctrl->m_ssg_group_id = SSG_GROUP_ID_INVALID;
-  });
+  get_engine().push_prefinalize_callback(this, [ctrl = this]() { });
   // pushing finalize callback that destroys the controller
   get_engine().push_finalize_callback(this, [ctrl = this]() { delete ctrl; });
 
@@ -29,23 +22,16 @@ controller::controller(tl::engine* engine, uint16_t provider_id,
     // use the pool from the engine if there is not thread pool
     m_pool = engine->get_handler_pool();
   }
+  init_ops_map();
 }
-
-void controller::init(ssg_group_id_t gid) { m_ssg_group_id = gid; init_ops_map(); }
 
 controller* controller::create(tl::engine* engine, uint16_t provider_id,
                                const tl::pool& pool) {
   auto ctrl = new controller(engine, provider_id, pool);
-  std::string group_name(default_ssg_group_name);
-  group_name += std::to_string(provider_id);
-  ssg_group_config_t config = default_ssg_group_config;
   std::string self_addr_str = static_cast<std::string>(engine->self());
-  std::vector<const char*> group_addr_strs = {self_addr_str.c_str()};
-  ssg_group_id_t gid = ssg_group_create(
-      engine->get_margo_instance(), group_name.c_str(), group_addr_strs.data(),
-      group_addr_strs.size(), &config, controller::group_membership_update,
-      static_cast<void*>(ctrl));
-  ctrl->init(gid);
+  ctrl->m_leader_addr = self_addr_str;
+  ctrl->m_this_addr   = self_addr_str;
+  ctrl->m_members     = { tl::provider_handle(engine->self(), provider_id) };
   return ctrl;
 }
 
@@ -53,79 +39,62 @@ controller* controller::create(tl::engine* engine,
                                const std::vector<std::string>& addresses,
                                uint16_t provider_id, const tl::pool& pool) {
   auto ctrl = new controller(engine, provider_id, pool);
-  std::string group_name(default_ssg_group_name);
-  group_name += std::to_string(provider_id);
-  ssg_group_config_t config = default_ssg_group_config;
-  std::vector<const char*> group_addr_strs(addresses.size());
-  for (unsigned i = 0; i < addresses.size(); i++)
-    group_addr_strs[i] = addresses[i].c_str();
-  ssg_group_id_t gid = ssg_group_create(
-      engine->get_margo_instance(), group_name.c_str(), group_addr_strs.data(),
-      group_addr_strs.size(), &config, controller::group_membership_update,
-      static_cast<void*>(ctrl));
-  ctrl->init(gid);
-  return ctrl;
-}
-
-controller* controller::create(tl::engine* engine, const std::string& filename,
-                               uint16_t provider_id, const tl::pool& pool) {
-  auto ctrl = new controller(engine, provider_id, pool);
-  std::string group_name(default_ssg_group_name);
-  group_name += std::to_string(provider_id);
-  ssg_group_config_t config = default_ssg_group_config;
-  ssg_group_id_t gid = ssg_group_create_config(
-      engine->get_margo_instance(), group_name.c_str(), filename.c_str(),
-      &config, controller::group_membership_update, static_cast<void*>(ctrl));
-  ctrl->init(gid);
+  ctrl->m_leader_addr = addresses[0];
+  ctrl->m_this_addr   = engine->self();
+  if(std::find(addresses.begin(), addresses.end(), ctrl->m_this_addr) == addresses.end()) {
+    throw std::runtime_error("Calling controller::create in a process without passing self address");
+  }
+  ctrl->m_members.reserve(addresses.size());
+  for (unsigned i = 0; i < addresses.size(); i++) {
+    ctrl->m_members.emplace_back(engine->lookup(addresses[i]), provider_id);
+  }
   return ctrl;
 }
 
 #ifdef COLZA_HAS_MPI
 controller* controller::create(tl::engine* engine, MPI_Comm comm,
                                uint16_t provider_id, const tl::pool& pool) {
-  auto ctrl = new controller(engine, provider_id, pool);
-  std::string group_name(default_ssg_group_name);
-  group_name += std::to_string(provider_id);
-  ssg_group_config_t config = default_ssg_group_config;
-  ssg_group_id_t gid = ssg_group_create_mpi(
-      engine->get_margo_instance(), group_name.c_str(), comm, &config,
-      controller::group_membership_update, static_cast<void*>(ctrl));
-  ctrl->init(gid);
-  return ctrl;
+    int rank, size;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+    std::vector<std::string> addresses(size);
+    std::string self_addr = engine->self();
+    int addr_max_size = self_addr.size();
+    int result;
+    MPI_Allreduce(&addr_max_size, &result, 1, MPI_INT, MPI_MAX, comm);
+    addr_max_size = result;
+    addr_max_size += 1;
+    self_addr.resize(addr_max_size, '\0');
+    std::vector<char> all_addresses(size*addr_max_size);
+    MPI_Allgather(self_addr.data(), addr_max_size, MPI_BYTE,
+                  all_addresses.data(), addr_max_size, MPI_BYTE, comm);
+    for(unsigned i=0; i < size; i++) {
+        addresses[i] = all_addresses.data() + addr_max_size*i;
+    }
+    return create(engine, addresses, provider_id, pool);
 }
 #endif
 
-#ifdef COLZA_HAS_PMIX
-controller* controller::create(tl::engine* engine, pmix_proc_t proc,
-                               uint16_t provider_id, const tl::pool& pool) {
-  auto ctrl = new controller(engine, provider_id, pool);
-  std::string group_name(default_ssg_group_name);
-  group_name += std::to_string(provider_id);
-  ssg_group_config_t config = default_ssg_group_config;
-  ssg_group_id_t gid = ssg_group_create_pmix(
-      engine->get_margo_instance(), group_name.c_str(), proc, &config,
-      controller::group_membership_update, static_cast<void*>(ctrl));
-  ctrl->init(gid);
-  return new ctrl;
-}
-#endif
-
-controller* controller::join(tl::engine* engine, const std::string& descriptor,
+controller* controller::join(tl::engine* engine, const std::string& leader_addr,
                              uint16_t provider_id, const tl::pool& pool) {
-  auto ctrl = new controller(engine, provider_id, pool);
-  ssg_group_id_t gid;
-  int num_addrs = 128;
-  ssg_group_id_deserialize(
-          descriptor.c_str(),
-          descriptor.size(),
-          &num_addrs, &gid);
-  int ret = ssg_group_join_target(
-          engine->get_margo_instance(),
-          gid, nullptr, controller::group_membership_update,
-          static_cast<void*>(ctrl));
-  // TODO check return value
-  ctrl->init(gid);
-  return ctrl;
+  // lookup a provider handle for the leader
+  auto leader_endpoint = engine->lookup(leader_addr);
+  return join(engine, leader_endpoint, provider_id, pool);
+}
+
+controller* controller::join(tl::engine* engine, const tl::endpoint& leader_endpoint,
+                             uint16_t provider_id, const tl::pool& pool) {
+    auto ctrl = new controller(engine, provider_id, pool);
+    auto ph = tl::provider_handle(leader_endpoint, provider_id);
+    bool result = ctrl->m_join_rpc.on(ph)();
+    if(!result) {
+        delete ctrl;
+        throw std::runtime_error("Could not join leader controller");
+    } else {
+        ctrl->m_leader_addr = static_cast<std::string>(leader_endpoint);
+        ctrl->m_this_addr = static_cast<std::string>(engine->self());
+    }
+    return ctrl;
 }
 
 }  // namespace colza
