@@ -32,6 +32,12 @@ controller* controller::create(tl::engine* engine, uint16_t provider_id,
   ctrl->m_leader_addr = self_addr_str;
   ctrl->m_this_addr   = self_addr_str;
   ctrl->m_members     = { tl::provider_handle(engine->self(), provider_id) };
+  // create the world communicator
+  UUID masterid; // masterid = 0
+  std::shared_ptr<communicator> world_comm = 
+      std::shared_ptr<communicator>(
+              new communicator(ctrl,1, 0, ctrl->m_members));
+  ctrl->m_communicators[masterid] = world_comm;
   return ctrl;
 }
 
@@ -45,9 +51,18 @@ controller* controller::create(tl::engine* engine,
     throw std::runtime_error("Calling controller::create in a process without passing self address");
   }
   ctrl->m_members.reserve(addresses.size());
+  int my_rank = 0;
   for (unsigned i = 0; i < addresses.size(); i++) {
     ctrl->m_members.emplace_back(engine->lookup(addresses[i]), provider_id);
+    if(addresses[i] == ctrl->m_this_addr)
+        my_rank = i;
   }
+  // create the world communicator
+  UUID masterid; // masterid = 0
+  std::shared_ptr<communicator> world_comm = 
+      std::shared_ptr<communicator>(
+              new communicator(ctrl, addresses.size(), my_rank, ctrl->m_members));
+  ctrl->m_communicators[masterid] = world_comm;
   return ctrl;
 }
 
