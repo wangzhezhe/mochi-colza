@@ -7,6 +7,29 @@ namespace colza {
 std::shared_ptr<communicator> controller::build_world_communicator() {
     UUID masterid; // masterid = 0
     std::shared_ptr<communicator> world_comm;
+
+    // check if world comm already exists
+    { std::lock_guard<tl::mutex> lck (m_comm_mutex);
+      if(m_communicators.count(masterid)) {
+          world_comm = m_communicators[masterid];
+      }
+    }
+
+    // if world comm already exists, check if some processes are leaving
+    if(world_comm) {
+        std::vector<char> leaving(world_comm->size());
+        char x = 0;
+        world_comm->allgather(&x, leaving.data(), sizeof(x));
+        auto j = m_members.begin();
+        for(unsigned i = 0; i < leaving.size(); i++) {
+            if(!leaving[i]) {
+                j++;
+            } else {
+                j = m_members.erase(j);
+            }
+        }
+    }
+
     if(m_leader_addr == m_this_addr) { // master
         // create a copy of the current list of members
         { std::lock_guard<tl::mutex> lock(m_members_mutex);
@@ -19,17 +42,15 @@ std::shared_ptr<communicator> controller::build_world_communicator() {
         
         int size = members.size();
         // create or modify the world communicator
-        {   std::lock_guard<tl::mutex> lck (m_comm_mutex);
-            if(m_communicators.count(masterid)) { // communicator already exists
-                world_comm = m_communicators[masterid];
-                world_comm->m_size = size;
-                world_comm->m_members = members;
-            } else { // communicator does not exist, create it
-                world_comm = std::shared_ptr<communicator>(
-                        new communicator(const_cast<controller*>(this),
-                                         size, 0, members));
-                m_communicators[masterid] = world_comm;
-            }
+        if(world_comm) { // communicator already exists
+            world_comm->m_size = size;
+            world_comm->m_members = members;
+        } else { // communicator does not exist, create it
+            world_comm = std::shared_ptr<communicator>(
+                    new communicator(const_cast<controller*>(this),
+                        size, 0, members));
+            std::lock_guard<tl::mutex> lck (m_comm_mutex);
+            m_communicators[masterid] = world_comm;
         }
         // serialize the addresses
         std::vector<char> address_pack;
@@ -52,21 +73,18 @@ std::shared_ptr<communicator> controller::build_world_communicator() {
         }
     } else { // non-leader members
         // create or modify the world communicator
-        {   std::lock_guard<tl::mutex> lck (m_comm_mutex);
-            if(m_communicators.count(masterid)) {
-                world_comm = m_communicators[masterid];
-            } else {
-                // this is a fake world with only this process and the leader
-                // we can still correctly receive from rank 0 from this leader
-                std::vector<tl::provider_handle> members = {
-                    tl::provider_handle(get_engine().lookup(m_leader_addr), get_provider_id()),
-                    tl::provider_handle(get_engine().lookup(m_this_addr), get_provider_id())
-                };
-                world_comm = std::shared_ptr<communicator>(
-                        new communicator(const_cast<controller*>(this),
-                                         2, 1, members));
-                m_communicators[masterid] = world_comm;
-            }
+        if(!world_comm) {
+            // this is a fake world with only this process and the leader
+            // we can still correctly receive from rank 0 from this leader
+            std::vector<tl::provider_handle> members = {
+                tl::provider_handle(get_engine().lookup(m_leader_addr), get_provider_id()),
+                tl::provider_handle(get_engine().lookup(m_this_addr), get_provider_id())
+            };
+            world_comm = std::shared_ptr<communicator>(
+                    new communicator(const_cast<controller*>(this),
+                        2, 1, members));
+            std::lock_guard<tl::mutex> lck (m_comm_mutex);
+            m_communicators[masterid] = world_comm;
         }
         // receive the size and members from leader
         int address_pack_size;
@@ -93,6 +111,26 @@ std::shared_ptr<communicator> controller::build_world_communicator() {
         world_comm->send(&a, 1, 0, 1234);
     }
     return world_comm;
+}
+
+void controller::leave() {
+    UUID masterid; // masterid = 0
+    std::shared_ptr<communicator> world_comm;
+
+    // check if world comm already exists
+    { std::lock_guard<tl::mutex> lck (m_comm_mutex);
+      if(m_communicators.count(masterid)) {
+          world_comm = m_communicators[masterid];
+      }
+    }
+
+    std::vector<char> leaving(world_comm->size());
+    char x = 1;
+    world_comm->allgather(&x, leaving.data(), sizeof(x));
+
+    { std::lock_guard<tl::mutex> lck (m_comm_mutex);
+      m_communicators.erase(masterid);
+    }
 }
 
 }

@@ -166,6 +166,11 @@ class controller : public tl::provider<controller> {
         return m_leader_addr;
     }
 
+    /**
+     * @brief Makes the controller leave the group.
+     */
+    void leave();
+
     private:
 
     controller(tl::engine* engine, uint16_t provider_id=0, const tl::pool& pool=tl::pool());
