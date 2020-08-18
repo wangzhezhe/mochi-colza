@@ -109,6 +109,7 @@ std::shared_ptr<communicator> controller::synchronize() {
         // send confirmation to leader
         char a = 0;
         world_comm->send(&a, 1, 0, 1234);
+        m_members = world_comm->m_members;
     }
     return world_comm;
 }
