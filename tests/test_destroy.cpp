@@ -22,6 +22,7 @@ void DestroyTest::testDestroy() {
   }
   // destroy
   int ret = m_comm->destroy();
+  m_comm.reset();
   CPPUNIT_ASSERT(ret == 0);
   return;
 }

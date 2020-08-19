@@ -25,6 +25,7 @@ int communicator::duplicate(std::shared_ptr<communicator>* newcommptr) {
     std::cerr << "failed to duplicate becased of the bcast error" << std::endl;
     return status;
   }
+  this->barrier();
 
   auto c = std::shared_ptr<communicator>(new communicator(
       this->m_controller, this->m_size, this->m_rank, this->m_members));

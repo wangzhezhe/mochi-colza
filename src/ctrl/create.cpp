@@ -10,11 +10,12 @@ controller::controller(tl::engine* engine, uint16_t provider_id,
                        const tl::pool& pool)
     : tl::provider<controller>(*engine, provider_id),
       m_pool(pool),
-      m_p2p_transfer_rpc(define("colza_p2p_transfer", &controller::on_p2p_transfer, m_pool)),
+      m_p2p_transfer_rpc(define("colza_p2p_transfer", &controller::on_p2p_transfer, m_pool).disable_response()),
+      m_p2p_rma_transfer_rpc(define("colza_p2p_rma_transfer", &controller::on_p2p_rma_transfer, m_pool)),
       m_join_rpc(define("colza_join", &controller::on_join, m_pool))
 {
   // pushing pre-finalize callback that destroys the SSG group
-  get_engine().push_prefinalize_callback(this, [ctrl = this]() { });
+  get_engine().push_prefinalize_callback(this, [ctrl = this]() {});
   // pushing finalize callback that destroys the controller
   get_engine().push_finalize_callback(this, [ctrl = this]() { delete ctrl; });
 

@@ -100,7 +100,10 @@ class communicator {
         m_rank(rank),
         m_members(std::move(members)) {}
 
-  int on_p2p_transfer(const tl::endpoint &ep, tl::bulk &remote_bulk,
+  int on_p2p_transfer(const tl::endpoint &ep, std::vector<char> &remote_bulk,
+                      size_t size, int32_t source, int32_t tag);
+
+  int on_p2p_rma_transfer(const tl::endpoint &ep, tl::bulk &remote_bulk,
                       size_t size, int32_t source, int32_t tag);
 
   controller *m_controller;
@@ -110,7 +113,8 @@ class communicator {
   std::vector<tl::provider_handle> m_members;
 
   struct p2p_request {
-    tl::bulk *m_bulk;
+    tl::bulk *m_bulk = nullptr;
+    std::vector<char>* m_data = nullptr;
     const tl::endpoint *m_endpoint;
     size_t m_size;
     tl::eventual<void> m_eventual;

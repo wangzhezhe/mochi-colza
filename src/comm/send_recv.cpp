@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <thallium.hpp>
 
+#include "colza/buffer_wrapper.hpp"
 #include "colza/communicator.hpp"
 #include "colza/controller.hpp"
 #include "colza/request.hpp"
@@ -12,19 +13,26 @@ namespace tl = thallium;
 int communicator::send(const void *data, size_t size, int dest, int tag) {
   // request endpoint from member id
   const auto& dest_pr = m_members[dest];
-  // create bulk handle to expose the data
-  std::vector<std::pair<void *, size_t>> segment(1);
   if(size==0){
     // do not send the rpc if the size is zero
     return 0;
   }
+  int ret = 0;
+#ifdef COLZA_USE_RMA
+  // create bulk handle to expose the data
+  std::vector<std::pair<void *, size_t>> segment(1);
   segment[0].first = const_cast<void *>(data);
   segment[0].second = size;
   tl::bulk local_bulk =
       m_controller->get_engine().expose(segment, tl::bulk_mode::read_only);
   // send the RPC
-  int ret = m_controller->m_p2p_transfer_rpc.on(dest_pr)(
+  ret = m_controller->m_p2p_rma_transfer_rpc.on(dest_pr)(
       m_comm_id, local_bulk, size, (int32_t)m_rank, (int32_t)tag);
+#else
+  auto buf = buffer_wrapper(static_cast<const char*>(data), size);
+  m_controller->m_p2p_transfer_rpc.on(dest_pr)(
+                m_comm_id, buf, size, (int32_t)m_rank, (int32_t)tag);
+#endif
   return ret;
 }
 
@@ -66,11 +74,6 @@ int communicator::recv(void *data, size_t size, int src, int tag) {
     // do not recv the rpc if the size is zero
     return 0;
   }
-  std::vector<std::pair<void *, size_t>> segment(1);
-  segment[0].first = const_cast<void *>(data);
-  segment[0].second = size;
-  tl::bulk local_bulk =
-      m_controller->get_engine().expose(segment, tl::bulk_mode::write_only);
   p2p_request *req_ptr = nullptr;
 
   // lock the pending request map to see if there is a matching request
@@ -89,8 +92,18 @@ int communicator::recv(void *data, size_t size, int src, int tag) {
     req_ptr = key_equal->m_req;
     m_pending_p2p_requests.erase(key_equal);
   }
-  // TODO check that size matches req_ptr->m_size
-  local_bulk << req_ptr->m_bulk->on(*req_ptr->m_endpoint);
+    // TODO check that size matches req_ptr->m_size
+  if(req_ptr->m_bulk != nullptr) {
+      std::vector<std::pair<void *, size_t>> segment(1);
+      segment[0].first = const_cast<void *>(data);
+      segment[0].second = size;
+      tl::bulk local_bulk =
+          m_controller->get_engine().expose(segment, tl::bulk_mode::write_only);
+      local_bulk << req_ptr->m_bulk->on(*req_ptr->m_endpoint);
+  } else {
+      auto s = std::min<std::size_t>(req_ptr->m_data->size(), size);
+      std::memcpy(data, req_ptr->m_data->data(), s);
+  }
   req_ptr->m_eventual.set_value();
   return 0;
 }
@@ -140,7 +153,30 @@ int communicator::sendrecv(void *sendbuf, size_t sendSize, int dest,
   return status;
 }
 
-int communicator::on_p2p_transfer(const tl::endpoint &ep, tl::bulk &remote_bulk,
+int communicator::on_p2p_transfer(const tl::endpoint &ep, std::vector<char> &data,
+                                  size_t size, int32_t source, int32_t tag) {
+  p2p_request req;
+  req.m_data = &data;
+  req.m_endpoint = &ep;
+  req.m_size = size;
+
+  {
+    std::unique_lock<tl::mutex> lock(m_pending_p2p_requests_mtx);
+    // m_pending_p2p_requests[sig] = &req;
+    m_pending_p2p_requests.push_back(key_req(source, tag, &req));
+  }
+
+  //for the test case isend_irecv_complex
+  //it is important to use notify_all instead of the notify_one
+  //otherwise, the irecv coresponds with the isend might not be notified precisely
+  //and the program will hang there
+  m_pending_p2p_requests_cv.notify_all();
+  
+  req.m_eventual.wait();
+  return 0;
+}
+
+int communicator::on_p2p_rma_transfer(const tl::endpoint &ep, tl::bulk &remote_bulk,
                                   size_t size, int32_t source, int32_t tag) {
   p2p_request req;
   req.m_bulk = &remote_bulk;
