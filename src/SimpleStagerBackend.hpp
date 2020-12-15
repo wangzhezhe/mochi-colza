@@ -3,17 +3,17 @@
  *
  * See COPYRIGHT in top-level directory.
  */
-#ifndef __DUMMY_BACKEND_HPP
-#define __DUMMY_BACKEND_HPP
+#ifndef __SIMPLE_STAGER_BACKEND_HPP
+#define __SIMPLE_STAGER_BACKEND_HPP
 
 #include <colza/Backend.hpp>
 
 using json = nlohmann::json;
 
 /**
- * Dummy implementation of an colza Backend.
+ * SimpleStager implementation of an colza Backend.
  */
-class DummyPipeline : public colza::Backend {
+class SimpleStagerPipeline : public colza::Backend {
 
     ssg_group_id_t m_gid;
     json           m_config;
@@ -23,33 +23,33 @@ class DummyPipeline : public colza::Backend {
     /**
      * @brief Constructor.
      */
-    DummyPipeline(ssg_group_id_t gid, const json& config)
+    SimpleStagerPipeline(ssg_group_id_t gid, const json& config)
     : m_gid(gid), m_config(config) {}
 
     /**
      * @brief Move-constructor.
      */
-    DummyPipeline(DummyPipeline&&) = delete;
+    SimpleStagerPipeline(SimpleStagerPipeline&&) = delete;
 
     /**
      * @brief Copy-constructor.
      */
-    DummyPipeline(const DummyPipeline&) = delete;
+    SimpleStagerPipeline(const SimpleStagerPipeline&) = delete;
 
     /**
      * @brief Move-assignment operator.
      */
-    DummyPipeline& operator=(DummyPipeline&&) = delete;
+    SimpleStagerPipeline& operator=(SimpleStagerPipeline&&) = delete;
 
     /**
      * @brief Copy-assignment operator.
      */
-    DummyPipeline& operator=(const DummyPipeline&) = delete;
+    SimpleStagerPipeline& operator=(const SimpleStagerPipeline&) = delete;
 
     /**
      * @brief Destructor.
      */
-    virtual ~DummyPipeline() = default;
+    virtual ~SimpleStagerPipeline() = default;
 
     colza::RequestResult<int32_t> stage(
             const std::string& dataset_name,
@@ -92,7 +92,7 @@ class DummyPipeline : public colza::Backend {
 
     /**
      * @brief Static factory function used by the PipelineFactory to
-     * create a DummyPipeline.
+     * create a SimpleStagerPipeline.
      *
      * @param gid SSG group id
      * @param config JSON configuration for the pipeline

@@ -11,8 +11,8 @@ set (client-src-files
 set (admin-src-files
      Admin.cpp)
 
-set (dummy-src-files
-     dummy/DummyBackend.cpp)
+set (backends-src-files
+     SimpleStagerBackend.cpp)
 
 set (module-src-files
      BedrockModule.cpp)
@@ -27,7 +27,7 @@ set (colza-pkg "share/cmake/colza")
 set (colza-vers "${COLZA_VERSION_MAJOR}.${COLZA_VERSION_MINOR}")
 
 # server library
-add_library (colza-server ${server-src-files} ${dummy-src-files})
+add_library (colza-server ${server-src-files} ${backends-src-files})
 target_link_libraries (colza-server
     thallium
     PkgConfig::SSG
