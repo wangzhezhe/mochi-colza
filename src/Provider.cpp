@@ -14,13 +14,13 @@ namespace tl = thallium;
 namespace colza {
 
 Provider::Provider(const tl::engine& engine, ssg_group_id_t gid, uint16_t provider_id, const std::string& config, const tl::pool& p)
-: self(std::make_shared<ProviderImpl>(engine, provider_id, p)) {
+: self(std::make_shared<ProviderImpl>(engine, gid, provider_id, p)) {
     self->get_engine().push_finalize_callback(this, [p=this]() { p->self.reset(); });
     (void)config;
 }
 
 Provider::Provider(margo_instance_id mid, ssg_group_id_t gid, uint16_t provider_id, const std::string& config, const tl::pool& p)
-: self(std::make_shared<ProviderImpl>(mid, provider_id, p)) {
+: self(std::make_shared<ProviderImpl>(mid, gid, provider_id, p)) {
     self->get_engine().push_finalize_callback(this, [p=this]() { p->self.reset(); });
     (void)config;
 }

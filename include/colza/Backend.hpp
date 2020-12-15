@@ -9,6 +9,7 @@
 #include <colza/RequestResult.hpp>
 #include <colza/Types.hpp>
 
+#include <ssg.h>
 #include <unordered_set>
 #include <unordered_map>
 #include <functional>
@@ -29,11 +30,10 @@ namespace colza {
  * COLZA_REGISTER_BACKEND(mybackend, MyBackend); in a cpp file
  * that includes your backend class' header file.
  *
- * Your backend class should also have two static functions to
- * respectively create and open a pipeline:
+ * Your backend class should also have a static function to
+ * create a pipeline:
  *
- * std::unique_ptr<Backend> create(const json& config)
- * std::unique_ptr<Backend> attach(const json& config)
+ * std::unique_ptr<Backend> create(ssg_group_id_t gid, const json& config)
  */
 class Backend {
 
@@ -137,34 +137,19 @@ class PipelineFactory {
      * @brief Creates a pipeline and returns a unique_ptr to the created instance.
      *
      * @param backend_name Name of the backend to use.
-     * @param provider Provider that creates the pipeline.
+     * @param gid Group gathering other providers running the same pipeline.
      * @param config Configuration object to pass to the backend's create function.
      *
      * @return a unique_ptr to the created Pipeline.
      */
     static std::unique_ptr<Backend> createPipeline(const std::string& backend_name,
+                                                   ssg_group_id_t gid,
                                                    const json& config);
-
-    /**
-     * @brief Opens an existing database and returns a unique_ptr to the
-     * created backend instance.
-     *
-     * @param backend_name Name of the backend to use.
-     * @param provider Provider that creates the pipeline.
-     * @param config Configuration object to pass to the backend's open function.
-     *
-     * @return a unique_ptr to the created Backend.
-     */
-    static std::unique_ptr<Backend> openPipeline(const std::string& backend_name,
-                                                 const json& config);
 
     private:
 
     static std::unordered_map<std::string,
-                std::function<std::unique_ptr<Backend>(const json&)>> create_fn;
-
-    static std::unordered_map<std::string,
-                std::function<std::unique_ptr<Backend>(const json&)>> open_fn;
+                std::function<std::unique_ptr<Backend>(ssg_group_id_t, const json&)>> create_fn;
 };
 
 } // namespace colza
@@ -182,11 +167,8 @@ class __ColzaBackendRegistration {
 
     __ColzaBackendRegistration(const std::string& backend_name)
     {
-        colza::PipelineFactory::create_fn[backend_name] = [](const json& config) {
-            return BackendType::create(config);
-        };
-        colza::PipelineFactory::open_fn[backend_name] = [](const json& config) {
-            return BackendType::open(config);
+        colza::PipelineFactory::create_fn[backend_name] = [](ssg_group_id_t gid, const json& config) {
+            return BackendType::create(gid, config);
         };
     }
 };

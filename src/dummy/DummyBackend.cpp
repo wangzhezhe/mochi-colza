@@ -15,10 +15,6 @@ colza::RequestResult<bool> DummyPipeline::destroy() {
     return result;
 }
 
-std::unique_ptr<colza::Backend> DummyPipeline::create(const json& config) {
-    return std::unique_ptr<colza::Backend>(new DummyPipeline(config));
-}
-
-std::unique_ptr<colza::Backend> DummyPipeline::open(const json& config) {
-    return std::unique_ptr<colza::Backend>(new DummyPipeline(config));
+std::unique_ptr<colza::Backend> DummyPipeline::create(ssg_group_id_t gid, const json& config) {
+    return std::unique_ptr<colza::Backend>(new DummyPipeline(gid, config));
 }

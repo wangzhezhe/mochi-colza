@@ -15,35 +15,36 @@ using json = nlohmann::json;
  */
 class DummyPipeline : public colza::Backend {
 
-    json                   m_config;
+    ssg_group_id_t m_gid;
+    json           m_config;
 
     public:
 
     /**
      * @brief Constructor.
      */
-    DummyPipeline(const json& config)
-    : m_config(config) {}
+    DummyPipeline(ssg_group_id_t gid, const json& config)
+    : m_gid(gid), m_config(config) {}
 
     /**
      * @brief Move-constructor.
      */
-    DummyPipeline(DummyPipeline&&) = default;
+    DummyPipeline(DummyPipeline&&) = delete;
 
     /**
      * @brief Copy-constructor.
      */
-    DummyPipeline(const DummyPipeline&) = default;
+    DummyPipeline(const DummyPipeline&) = delete;
 
     /**
      * @brief Move-assignment operator.
      */
-    DummyPipeline& operator=(DummyPipeline&&) = default;
+    DummyPipeline& operator=(DummyPipeline&&) = delete;
 
     /**
      * @brief Copy-assignment operator.
      */
-    DummyPipeline& operator=(const DummyPipeline&) = default;
+    DummyPipeline& operator=(const DummyPipeline&) = delete;
 
     /**
      * @brief Destructor.
@@ -93,21 +94,12 @@ class DummyPipeline : public colza::Backend {
      * @brief Static factory function used by the PipelineFactory to
      * create a DummyPipeline.
      *
+     * @param gid SSG group id
      * @param config JSON configuration for the pipeline
      *
      * @return a unique_ptr to a pipeline
      */
-    static std::unique_ptr<colza::Backend> create(const json& config);
-
-    /**
-     * @brief Static factory function used by the PipelineFactory to
-     * open a DummyPipeline.
-     *
-     * @param config JSON configuration for the pipeline
-     *
-     * @return a unique_ptr to a pipeline
-     */
-    static std::unique_ptr<colza::Backend> open(const json& config);
+    static std::unique_ptr<colza::Backend> create(ssg_group_id_t gid, const json& config);
 };
 
 #endif
