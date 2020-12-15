@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #ifndef __COLZA_REQUEST_RESULT_HPP
@@ -28,7 +28,7 @@ namespace colza {
  */
 template<typename T>
 class RequestResult {
-    
+
     public:
 
     RequestResult() = default;
@@ -66,14 +66,14 @@ class RequestResult {
     }
 
     /**
-     * @brief Value if the request succeeded. 
+     * @brief Value if the request succeeded.
      */
     T& value() {
         return m_value;
     }
 
     /**
-     * @brief Value if the request succeeded. 
+     * @brief Value if the request succeeded.
      */
     const T& value() const {
         return m_value;
@@ -101,7 +101,7 @@ class RequestResult {
 
 template<>
 class RequestResult<std::string> {
-    
+
     public:
 
     RequestResult() = default;
@@ -144,53 +144,6 @@ class RequestResult<std::string> {
 
     bool        m_success = true;
     std::string m_content = "";
-};
-
-template<>
-class RequestResult<bool> {
-    
-    public:
-
-    RequestResult() = default;
-    RequestResult(RequestResult&&) = default;
-    RequestResult(const RequestResult&) = default;
-    RequestResult& operator=(RequestResult&&) = default;
-    RequestResult& operator=(const RequestResult&) = default;
-
-    bool& success() {
-        return m_success;
-    }
-
-    const bool& success() const {
-        return m_success;
-    }
-
-    std::string& error() {
-        return m_error;
-    }
-
-    const std::string& error() const {
-        return m_error;
-    }
-
-    bool& value() {
-        return m_success;
-    }
-
-    const bool& value() const {
-        return m_success;
-    }
-
-    template<typename Archive>
-    void serialize(Archive& a) {
-        a & m_success;
-        a & m_error;
-    }
-
-    private:
-
-    bool        m_success = true;
-    std::string m_error   = "";
 };
 
 }
