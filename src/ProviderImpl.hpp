@@ -54,6 +54,9 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     tl::remote_procedure m_destroy_pipeline;
     // Client RPC
     tl::remote_procedure m_check_pipeline;
+    tl::remote_procedure m_stage;
+    tl::remote_procedure m_execute;
+    tl::remote_procedure m_cleanup;
     // Backends
     std::unordered_map<UUID, std::shared_ptr<Backend>> m_backends;
     tl::mutex m_backends_mtx;
@@ -65,6 +68,9 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_create_pipeline(define("colza_create_pipeline", &ProviderImpl::createPipeline, pool))
     , m_destroy_pipeline(define("colza_destroy_pipeline", &ProviderImpl::destroyPipeline, pool))
     , m_check_pipeline(define("colza_check_pipeline", &ProviderImpl::checkPipeline, pool))
+    , m_stage(define("colza_stage", &ProviderImpl::stage, pool))
+    , m_execute(define("colza_execute", &ProviderImpl::execute, pool))
+    , m_cleanup(define("colza_cleanup", &ProviderImpl::cleanup, pool))
     {
         spdlog::trace("[provider:{0}] Registered provider with id {0}", id());
     }
@@ -187,6 +193,46 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         spdlog::trace("[provider:{}] Code successfully executed on pipeline {}", id(), pipeline_id.to_string());
     }
 
+    void stage(const tl::request& req,
+               const UUID& pipeline_id,
+               const std::string& sender_addr,
+               const std::string& dataset_name,
+               uint64_t iteration,
+               uint64_t block_id,
+               const std::vector<size_t>& dimensions,
+               const std::vector<int64_t>& offsets,
+               const Type& type,
+               const thallium::bulk& data) {
+        spdlog::trace("[provider:{}] Received stage request for pipeline {}", id(), pipeline_id.to_string());
+        RequestResult<int32_t> result;
+        FIND_PIPELINE(pipeline);
+        result = pipeline->stage(
+            sender_addr, dataset_name, iteration, block_id, dimensions, offsets, type, data);
+        req.respond(result);
+        spdlog::trace("[provider:{}] Data successfully staged on pipeline {}", id(), pipeline_id.to_string());
+    }
+
+    void execute(const tl::request& req,
+                 const UUID& pipeline_id,
+                 uint64_t iteration) {
+        spdlog::trace("[provider:{}] Received execute request for pipeline {}", id(), pipeline_id.to_string());
+        RequestResult<int32_t> result;
+        FIND_PIPELINE(pipeline);
+        result = pipeline->execute(iteration);
+        req.respond(result);
+        spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_id.to_string());
+    }
+
+    void cleanup(const tl::request& req,
+                 const UUID& pipeline_id,
+                 uint64_t iteration) {
+        spdlog::trace("[provider:{}] Received cleanup request for pipeline {}", id(), pipeline_id.to_string());
+        RequestResult<int32_t> result;
+        FIND_PIPELINE(pipeline);
+        result = pipeline->cleanup(iteration);
+        req.respond(result);
+        spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_id.to_string());
+    }
 };
 
 }

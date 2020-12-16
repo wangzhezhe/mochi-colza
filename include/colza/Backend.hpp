@@ -72,19 +72,24 @@ class Backend {
     /**
      * @brief Stage some data for a future execution of the pipeline.
      *
-     * @param dataset Dataset name
+     * @param sender_addr Sender address
+     * @param dataset_name Dataset name
      * @param iteration Iteration
      * @param block_id Block id
      * @param dimensions Dimensions
+     * @param offsets Offsets along each dimension
+     * @param type Type of data
      * @param data Data
      *
      * @return COLZA_SUCCESS or other error codes.
      */
     virtual RequestResult<int32_t> stage(
+            const std::string& sender_addr,
             const std::string& dataset_name,
             uint64_t iteration,
             uint64_t block_id,
             const std::vector<size_t>& dimensions,
+            const std::vector<int64_t>& offsets,
             const Type& type,
             const thallium::bulk& data) = 0;
 
