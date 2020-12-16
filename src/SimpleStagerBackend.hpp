@@ -34,6 +34,7 @@ class SimpleStagerPipeline : public colza::Backend {
 
     protected:
 
+    tl::engine     m_engine;
     ssg_group_id_t m_gid;
     json           m_config;
     std::map<uint64_t,         // iteration
@@ -50,8 +51,10 @@ class SimpleStagerPipeline : public colza::Backend {
     /**
      * @brief Constructor.
      */
-    SimpleStagerPipeline(ssg_group_id_t gid, const json& config)
-    : m_gid(gid), m_config(config) {}
+    SimpleStagerPipeline(const colza::PipelineFactoryArgs& args)
+    : m_engine(args.engine)
+    , m_gid(args.gid)
+    , m_config(args.config) {}
 
     /**
      * @brief Move-constructor.
@@ -145,12 +148,11 @@ class SimpleStagerPipeline : public colza::Backend {
      * @brief Static factory function used by the PipelineFactory to
      * create a SimpleStagerPipeline.
      *
-     * @param gid SSG group id
-     * @param config JSON configuration for the pipeline
+     * @param args arguments used for creating the pipeline.
      *
      * @return a unique_ptr to a pipeline
      */
-    static std::unique_ptr<colza::Backend> create(ssg_group_id_t gid, const json& config);
+    static std::unique_ptr<colza::Backend> create(const colza::PipelineFactoryArgs& args);
 };
 
 #endif

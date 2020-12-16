@@ -119,6 +119,18 @@ class Backend {
 };
 
 /**
+ * @brief Arguments required by a pipeline to be constructed.
+ */
+struct PipelineFactoryArgs {
+
+    using json = nlohmann::json;
+
+    ssg_group_id_t   gid;
+    thallium::engine engine;
+    json             config;
+};
+
+/**
  * @brief The PipelineFactory contains functions to create
  * or open pipelines.
  */
@@ -137,19 +149,17 @@ class PipelineFactory {
      * @brief Creates a pipeline and returns a unique_ptr to the created instance.
      *
      * @param backend_name Name of the backend to use.
-     * @param gid Group gathering other providers running the same pipeline.
-     * @param config Configuration object to pass to the backend's create function.
+     * @param args Arguments used to create the pipeline.
      *
      * @return a unique_ptr to the created Pipeline.
      */
     static std::unique_ptr<Backend> createPipeline(const std::string& backend_name,
-                                                   ssg_group_id_t gid,
-                                                   const json& config);
+                                                   const PipelineFactoryArgs& args);
 
     private:
 
     static std::unordered_map<std::string,
-                std::function<std::unique_ptr<Backend>(ssg_group_id_t, const json&)>> create_fn;
+                std::function<std::unique_ptr<Backend>(const PipelineFactoryArgs&)>> create_fn;
 };
 
 } // namespace colza
@@ -167,8 +177,8 @@ class __ColzaBackendRegistration {
 
     __ColzaBackendRegistration(const std::string& backend_name)
     {
-        colza::PipelineFactory::create_fn[backend_name] = [](ssg_group_id_t gid, const json& config) {
-            return BackendType::create(gid, config);
+        colza::PipelineFactory::create_fn[backend_name] = [](const colza::PipelineFactoryArgs& args) {
+            return BackendType::create(args);
         };
     }
 };

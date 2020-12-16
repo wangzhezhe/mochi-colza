@@ -12,15 +12,14 @@ namespace colza {
 using json = nlohmann::json;
 
 std::unordered_map<std::string,
-                std::function<std::unique_ptr<Backend>(ssg_group_id_t gid, const json&)>> PipelineFactory::create_fn;
+                std::function<std::unique_ptr<Backend>(const PipelineFactoryArgs&)>> PipelineFactory::create_fn;
 
 std::unique_ptr<Backend> PipelineFactory::createPipeline(const std::string& backend_name,
-                                                         ssg_group_id_t gid,
-                                                         const json& config) {
+                                                         const PipelineFactoryArgs& args) {
     auto it = create_fn.find(backend_name);
     if(it == create_fn.end()) return nullptr;
     auto& f = it->second;
-    return f(gid, config);
+    return f(args);
 }
 
 }

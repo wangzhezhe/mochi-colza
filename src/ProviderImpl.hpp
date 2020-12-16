@@ -111,7 +111,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
         std::unique_ptr<Backend> backend;
         try {
-            backend = PipelineFactory::createPipeline(pipeline_type, m_gid, json_config);
+            PipelineFactoryArgs args;
+            args.engine = get_engine();
+            args.config = json_config;
+            args.gid = m_gid;
+            backend = PipelineFactory::createPipeline(pipeline_type, args);
         } catch(const std::exception& ex) {
             result.success() = false;
             result.error() = ex.what();
