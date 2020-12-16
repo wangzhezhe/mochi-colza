@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #ifndef __COLZA_PIPELINE_HANDLE_HPP
@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <nlohmann/json.hpp>
 #include <colza/Client.hpp>
+#include <colza/Types.hpp>
 #include <colza/Exception.hpp>
 #include <colza/AsyncRequest.hpp>
 
@@ -73,24 +74,74 @@ class PipelineHandle {
     operator bool() const;
 
     /**
-     * @brief Sends an RPC to the pipeline to make it print a hello message.
+     * @brief Stage some data into the pipeline using a bulk handle.
+     *
+     * @param[in] dataset_name Dataset name
+     * @param[in] iteration Iteration
+     * @param[in] block_id Block id
+     * @param[in] dimensions Dimensions
+     * @param[in] offsets Offsets
+     * @param[in] type Type
+     * @param[in] data Data as bulk handle
+     * @param[in] origin_addr Address of the bulk handle ("" if this process)
+     * @param[out] result Result
+     * @param[out] req Asynchronous request
      */
-    void sayHello() const;
+    void stage(const std::string& dataset_name,
+               uint64_t iteration,
+               uint64_t block_id,
+               const std::vector<size_t>& dimensions,
+               const std::vector<int64_t>& offsets,
+               const Type& type,
+               const thallium::bulk& data,
+               const std::string& origin_addr = "",
+               int32_t* result = nullptr,
+               AsyncRequest* req = nullptr) const;
 
     /**
-     * @brief Requests the target pipeline to compute the sum of two numbers.
-     * If result is null, it will be ignored. If req is not null, this call
-     * will be non-blocking and the caller is responsible for waiting on
-     * the request.
+     * @brief Stage some local data into the pipeline.
      *
-     * @param[in] x first integer
-     * @param[in] y second integer
-     * @param[out] result result
-     * @param[out] req request for a non-blocking operation
+     * @param[in] dataset_name Dataset name
+     * @param[in] iteration Iteration
+     * @param[in] block_id Block id
+     * @param[in] dimensions Dimensions
+     * @param[in] offsets Offsets
+     * @param[in] type Type
+     * @param[in] data Local data
+     * @param[out] result Result
+     * @param[out] req Asynchronous request
      */
-    void computeSum(int32_t x, int32_t y,
-                    int32_t* result = nullptr,
-                    AsyncRequest* req = nullptr) const;
+    void stage(const std::string& dataset_name,
+               uint64_t iteration,
+               uint64_t block_id,
+               const std::vector<size_t>& dimensions,
+               const std::vector<int64_t>& offsets,
+               const Type& type,
+               const char* data,
+               int32_t* result = nullptr,
+               AsyncRequest* req = nullptr) const;
+
+    /**
+     * @brief Execute the pipeline on a given iteration.
+     *
+     * @param iteration Iteration of data on which to execute.
+     * @param result Result.
+     * @param req Asynchronous request.
+     */
+    void execute(uint64_t iteration,
+                 int32_t* result = nullptr,
+                 AsyncRequest* req = nullptr) const;
+
+    /**
+     * @brief Cleanup the pipeline on a given iteration.
+     *
+     * @param iteration Iteration to cleanup.
+     * @param result Result.
+     * @param req Asynchronous request.
+     */
+    void cleanup(uint64_t iteration,
+                 int32_t* result = nullptr,
+                 AsyncRequest* req = nullptr) const;
 
     private:
 

@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include "colza/PipelineHandle.hpp"
@@ -39,6 +39,44 @@ Client PipelineHandle::client() const {
     return Client(self->m_client);
 }
 
+void PipelineHandle::stage(const std::string& dataset_name,
+           uint64_t iteration,
+           uint64_t block_id,
+           const std::vector<size_t>& dimensions,
+           const std::vector<int64_t>& offsets,
+           const Type& type,
+           const thallium::bulk& data,
+           const std::string& origin_addr,
+           int32_t* result,
+           AsyncRequest* req) const {
+    // TODO
+}
+
+void PipelineHandle::stage(const std::string& dataset_name,
+           uint64_t iteration,
+           uint64_t block_id,
+           const std::vector<size_t>& dimensions,
+           const std::vector<int64_t>& offsets,
+           const Type& type,
+           const char* data,
+           int32_t* result,
+           AsyncRequest* req) const {
+    // TODO
+}
+
+void PipelineHandle::execute(uint64_t iteration,
+             int32_t* result,
+             AsyncRequest* req) const {
+    // TODO
+}
+
+void PipelineHandle::cleanup(uint64_t iteration,
+             int32_t* result,
+             AsyncRequest* req) const {
+    // TODO
+}
+
+#if 0
 void PipelineHandle::sayHello() const {
     if(not self) throw Exception("Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_say_hello;
@@ -80,5 +118,5 @@ void PipelineHandle::computeSum(
         *req = AsyncRequest(std::move(async_request_impl));
     }
 }
-
+#endif
 }

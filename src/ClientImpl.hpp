@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #ifndef __COLZA_CLIENT_IMPL_H
@@ -21,14 +21,16 @@ class ClientImpl {
 
     tl::engine           m_engine;
     tl::remote_procedure m_check_pipeline;
-    tl::remote_procedure m_say_hello;
-    tl::remote_procedure m_compute_sum;
+    tl::remote_procedure m_stage;
+    tl::remote_procedure m_execute;
+    tl::remote_procedure m_cleanup;
 
     ClientImpl(const tl::engine& engine)
     : m_engine(engine)
     , m_check_pipeline(m_engine.define("colza_check_pipeline"))
-    , m_say_hello(m_engine.define("colza_say_hello").disable_response())
-    , m_compute_sum(m_engine.define("colza_compute_sum"))
+    , m_stage(m_engine.define("colza_stage"))
+    , m_execute(m_engine.define("colza_execute"))
+    , m_cleanup(m_engine.define("colza_cleanup"))
     {}
 
     ClientImpl(margo_instance_id mid)

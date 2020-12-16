@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include <colza/Client.hpp>
@@ -35,10 +35,12 @@ int main(int argc, char** argv) {
             client.makePipelineHandle(g_address, g_provider_id,
                     colza::UUID::from_string(g_pipeline.c_str()));
 
+#if 0
         pipeline.sayHello();
 
         int32_t result;
         pipeline.computeSum(32, 54, &result);
+#endif
 
     } catch(const colza::Exception& ex) {
         std::cerr << ex.what() << std::endl;

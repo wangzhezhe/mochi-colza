@@ -14,8 +14,10 @@ class PipelineTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( PipelineTest );
     CPPUNIT_TEST( testMakePipelineHandle );
+#if 0
     CPPUNIT_TEST( testSayHello );
     CPPUNIT_TEST( testComputeSum );
+#endif
     CPPUNIT_TEST_SUITE_END();
 
     static constexpr const char* pipeline_config = "{ \"path\" : \"mydb\" }";
@@ -63,6 +65,7 @@ class PipelineTest : public CppUnit::TestFixture
                 client.makePipelineHandle(addr, 1, pipeline_id, false));
     }
 
+#if 0
     void testSayHello() {
         colza::Client client(engine);
         std::string addr = engine.self();
@@ -102,6 +105,7 @@ class PipelineTest : public CppUnit::TestFixture
                 "request.wait() should not throw.",
                 request.wait());
     }
+#endif
 
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( PipelineTest );
