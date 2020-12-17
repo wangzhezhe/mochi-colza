@@ -10,6 +10,7 @@
 #include "AsyncRequestImpl.hpp"
 #include "ClientImpl.hpp"
 #include "PipelineHandleImpl.hpp"
+#include "TypeSizes.hpp"
 
 #include <thallium/serialization/stl/string.hpp>
 #include <thallium/serialization/stl/pair.hpp>
@@ -49,7 +50,54 @@ void PipelineHandle::stage(const std::string& dataset_name,
            const std::string& origin_addr,
            int32_t* result,
            AsyncRequest* req) const {
-    // TODO
+    if(not self) throw Exception("Invalid colza::PipelineHandle object");
+    auto& rpc = self->m_client->m_stage;
+    auto& ph  = self->m_ph;
+    auto& pipeline_id = self->m_pipeline_id;
+    auto sender_addr = origin_addr == "" ?
+        static_cast<std::string>(self->m_client->m_engine.self()) :
+        origin_addr;
+    if(req == nullptr) { // synchronous call
+        RequestResult<int32_t> response = rpc.on(ph)(
+                pipeline_id,
+                sender_addr,
+                dataset_name,
+                iteration,
+                block_id,
+                dimensions,
+                offsets,
+                type,
+                data);
+        if(response.success()) {
+            if(result) *result = response.value();
+        } else {
+            throw Exception(response.error());
+        }
+    } else { // asynchronous call
+        auto async_response = rpc.on(ph).async(
+                pipeline_id,
+                sender_addr,
+                dataset_name,
+                iteration,
+                block_id,
+                dimensions,
+                offsets,
+                type,
+                data);
+        auto async_request_impl =
+            std::make_shared<AsyncRequestImpl>(std::move(async_response));
+        async_request_impl->m_wait_callback =
+            [result](AsyncRequestImpl& async_request_impl) {
+                RequestResult<int32_t> response =
+                    async_request_impl.m_async_response.wait();
+                    if(response.success()) {
+                        if(result) *result = response.value();
+                    } else {
+                        throw Exception(response.error());
+                    }
+            };
+        *req = AsyncRequest(std::move(async_request_impl));
+    }
 }
 
 void PipelineHandle::stage(const std::string& dataset_name,
@@ -61,19 +109,120 @@ void PipelineHandle::stage(const std::string& dataset_name,
            const char* data,
            int32_t* result,
            AsyncRequest* req) const {
-    // TODO
+    if(not self) throw Exception("Invalid colza::PipelineHandle object");
+    auto& rpc = self->m_client->m_stage;
+    auto& ph  = self->m_ph;
+    auto& pipeline_id = self->m_pipeline_id;
+    auto sender_addr = static_cast<std::string>(self->m_client->m_engine.self());
+    std::vector<std::pair<void*, size_t>> segment(1);
+    segment[0].first = const_cast<char*>(data);
+    segment[0].second = ComputeDataSize(dimensions, type);
+    auto bulk = self->m_client->m_engine.expose(segment, tl::bulk_mode::read_only);
+    if(req == nullptr) { // synchronous call
+        RequestResult<int32_t> response = rpc.on(ph)(
+                pipeline_id,
+                sender_addr,
+                dataset_name,
+                iteration,
+                block_id,
+                dimensions,
+                offsets,
+                type,
+                bulk);
+        if(response.success()) {
+            if(result) *result = response.value();
+        } else {
+            throw Exception(response.error());
+        }
+    } else { // asynchronous call
+        auto async_response = rpc.on(ph).async(
+                pipeline_id,
+                sender_addr,
+                dataset_name,
+                iteration,
+                block_id,
+                dimensions,
+                offsets,
+                type,
+                bulk);
+        auto async_request_impl =
+            std::make_shared<AsyncRequestImpl>(std::move(async_response));
+        async_request_impl->m_wait_callback =
+            [result, bulk=std::move(bulk)](AsyncRequestImpl& async_request_impl) {
+                RequestResult<int32_t> response =
+                    async_request_impl.m_async_response.wait();
+                    if(response.success()) {
+                        if(result) *result = response.value();
+                    } else {
+                        throw Exception(response.error());
+                    }
+            };
+        *req = AsyncRequest(std::move(async_request_impl));
+    }
 }
 
 void PipelineHandle::execute(uint64_t iteration,
              int32_t* result,
              AsyncRequest* req) const {
-    // TODO
+    if(not self) throw Exception("Invalid colza::PipelineHandle object");
+    auto& rpc = self->m_client->m_execute;
+    auto& ph  = self->m_ph;
+    auto& pipeline_id = self->m_pipeline_id;
+    if(req == nullptr) { // synchronous call
+        RequestResult<int32_t> response = rpc.on(ph)(pipeline_id, iteration);
+        if(response.success()) {
+            if(result) *result = response.value();
+        } else {
+            throw Exception(response.error());
+        }
+    } else { // asynchronous call
+        auto async_response = rpc.on(ph).async(pipeline_id, iteration);
+        auto async_request_impl =
+            std::make_shared<AsyncRequestImpl>(std::move(async_response));
+        async_request_impl->m_wait_callback =
+            [result](AsyncRequestImpl& async_request_impl) {
+                RequestResult<int32_t> response =
+                    async_request_impl.m_async_response.wait();
+                    if(response.success()) {
+                        if(result) *result = response.value();
+                    } else {
+                        throw Exception(response.error());
+                    }
+            };
+        *req = AsyncRequest(std::move(async_request_impl));
+    }
 }
 
 void PipelineHandle::cleanup(uint64_t iteration,
              int32_t* result,
              AsyncRequest* req) const {
-    // TODO
+    if(not self) throw Exception("Invalid colza::PipelineHandle object");
+    auto& rpc = self->m_client->m_cleanup;
+    auto& ph  = self->m_ph;
+    auto& pipeline_id = self->m_pipeline_id;
+    if(req == nullptr) { // synchronous call
+        RequestResult<int32_t> response = rpc.on(ph)(pipeline_id, iteration);
+        if(response.success()) {
+            if(result) *result = response.value();
+        } else {
+            throw Exception(response.error());
+        }
+    } else { // asynchronous call
+        auto async_response = rpc.on(ph).async(pipeline_id, iteration);
+        auto async_request_impl =
+            std::make_shared<AsyncRequestImpl>(std::move(async_response));
+        async_request_impl->m_wait_callback =
+            [result](AsyncRequestImpl& async_request_impl) {
+                RequestResult<int32_t> response =
+                    async_request_impl.m_async_response.wait();
+                    if(response.success()) {
+                        if(result) *result = response.value();
+                    } else {
+                        throw Exception(response.error());
+                    }
+            };
+        *req = AsyncRequest(std::move(async_request_impl));
+    }
 }
 
 #if 0
