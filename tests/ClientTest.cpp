@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include <cppunit/extensions/HelperMacros.h>
@@ -16,7 +16,7 @@ class ClientTest : public CppUnit::TestFixture
     CPPUNIT_TEST( testOpenPipeline );
     CPPUNIT_TEST_SUITE_END();
 
-    static constexpr const char* pipeline_config = "{ \"path\" : \"mydb\" }";
+    static constexpr const char* pipeline_config = "{}";
     UUID pipeline_id;
 
     public:
@@ -36,7 +36,7 @@ class ClientTest : public CppUnit::TestFixture
     void testOpenPipeline() {
         colza::Client client(engine);
         std::string addr = engine.self();
-        
+
         Pipeline my_pipeline = client.open(addr, 0, pipeline_id);
         CPPUNIT_ASSERT_MESSAGE(
                 "Pipeline should be valid",

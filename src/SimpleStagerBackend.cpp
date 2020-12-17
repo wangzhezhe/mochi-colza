@@ -13,14 +13,16 @@ colza::RequestResult<int32_t> SimpleStagerPipeline::execute(
     (void)iteration;
     auto result = colza::RequestResult<int32_t>();
     result.value() = 0;
-    return result;;
+    return result;
 }
 
 colza::RequestResult<int32_t> SimpleStagerPipeline::cleanup(
         uint64_t iteration) {
     std::lock_guard<tl::mutex> g(m_datasets_mtx);
     m_datasets.erase(iteration);
-    return colza::RequestResult<int32_t>();
+    auto result = colza::RequestResult<int32_t>();
+    result.value() = 0;
+    return result;
 }
 
 colza::RequestResult<int32_t> SimpleStagerPipeline::stage(
@@ -33,6 +35,7 @@ colza::RequestResult<int32_t> SimpleStagerPipeline::stage(
         const colza::Type& type,
         const thallium::bulk& data) {
     colza::RequestResult<int32_t> result;
+    result.value() = 0;
     {
         std::lock_guard<tl::mutex> g(m_datasets_mtx);
         if(m_datasets.count(iteration) != 0

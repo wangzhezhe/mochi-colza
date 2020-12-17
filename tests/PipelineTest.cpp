@@ -14,13 +14,12 @@ class PipelineTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( PipelineTest );
     CPPUNIT_TEST( testMakePipelineHandle );
-#if 0
-    CPPUNIT_TEST( testSayHello );
-    CPPUNIT_TEST( testComputeSum );
-#endif
+    CPPUNIT_TEST( testStage );
+    CPPUNIT_TEST( testExecute );
+    CPPUNIT_TEST( testCleanup );
     CPPUNIT_TEST_SUITE_END();
 
-    static constexpr const char* pipeline_config = "{ \"path\" : \"mydb\" }";
+    static constexpr const char* pipeline_config = "{}";
     colza::UUID pipeline_id;
 
     public:
@@ -65,47 +64,62 @@ class PipelineTest : public CppUnit::TestFixture
                 client.makePipelineHandle(addr, 1, pipeline_id, false));
     }
 
-#if 0
-    void testSayHello() {
+    void testStage() {
         colza::Client client(engine);
         std::string addr = engine.self();
 
         colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_id);
 
+        // create some data
+        std::vector<double> mydata(32*54);
+        for(unsigned i=0; i < 32; i++)
+            for(unsigned j=0; j < 54; j++)
+                mydata[i*54+j] = i*j;
+        std::vector<size_t> dimensions = { 32, 54 };
+        std::vector<int64_t> offsets = { 0, 0 };
+        auto type = colza::Type::FLOAT64;
+
+        int32_t result;
         CPPUNIT_ASSERT_NO_THROW_MESSAGE(
-                "my_pipeline.sayHello() should not throw.",
-                my_pipeline.sayHello());
-    }
-
-    void testComputeSum() {
-        colza::Client client(engine);
-        std::string addr = engine.self();
-
-        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_id);
-
-        int32_t result = 0;
-        CPPUNIT_ASSERT_NO_THROW_MESSAGE(
-                "my_pipeline.computeSum() should not throw.",
-                my_pipeline.computeSum(42, 51, &result));
-
+                "my_pipeline.stage() should not throw.",
+                my_pipeline.stage("mydata", 42, 0,
+                       dimensions, offsets,
+                       type, mydata.data(),
+                       &result));
         CPPUNIT_ASSERT_EQUAL_MESSAGE(
-                "42 + 51 should be 93",
-                93, result);
-
-        CPPUNIT_ASSERT_NO_THROW_MESSAGE(
-                "my_pipeline.computeSum() should not throw when passed NULL.",
-                my_pipeline.computeSum(42, 51, nullptr));
-
-        colza::AsyncRequest request;
-        CPPUNIT_ASSERT_NO_THROW_MESSAGE(
-                "my_pipeline.computeSum() should not throw when called asynchronously.",
-                my_pipeline.computeSum(42, 51, &result, &request));
-
-        CPPUNIT_ASSERT_NO_THROW_MESSAGE(
-                "request.wait() should not throw.",
-                request.wait());
+                "result should be 0.",
+                0, result);
     }
-#endif
+
+    void testExecute() {
+        colza::Client client(engine);
+        std::string addr = engine.self();
+
+        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_id);
+
+        int32_t result;
+        CPPUNIT_ASSERT_NO_THROW_MESSAGE(
+                "my_pipeline.execute() should not throw.",
+                my_pipeline.execute(42, &result));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(
+                "result should be 0.",
+                0, result);
+    }
+
+    void testCleanup() {
+        colza::Client client(engine);
+        std::string addr = engine.self();
+
+        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_id);
+
+        int32_t result;
+        CPPUNIT_ASSERT_NO_THROW_MESSAGE(
+                "my_pipeline.cleanup() should not throw.",
+                my_pipeline.cleanup(42, &result));
+        CPPUNIT_ASSERT_EQUAL_MESSAGE(
+                "result should be 0.",
+                0, result);
+    }
 
 };
 CPPUNIT_TEST_SUITE_REGISTRATION( PipelineTest );
