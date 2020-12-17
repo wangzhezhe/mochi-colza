@@ -117,9 +117,10 @@ class PipelineHandle {
                const std::vector<size_t>& dimensions,
                const std::vector<int64_t>& offsets,
                const Type& type,
-               const char* data,
+               const void* data,
                int32_t* result = nullptr,
                AsyncRequest* req = nullptr) const;
+
 
     /**
      * @brief Execute the pipeline on a given iteration.

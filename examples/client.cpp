@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
         int32_t result;
         pipeline.stage("mydata", 42, 0,
                        dimensions, offsets,
-                       type, reinterpret_cast<char*>(mydata.data()),
+                       type, mydata.data(),
                        &result);
 
         // execute the pipeline

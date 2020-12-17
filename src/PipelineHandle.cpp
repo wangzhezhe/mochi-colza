@@ -106,7 +106,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
            const std::vector<size_t>& dimensions,
            const std::vector<int64_t>& offsets,
            const Type& type,
-           const char* data,
+           const void* data,
            int32_t* result,
            AsyncRequest* req) const {
     if(not self) throw Exception("Invalid colza::PipelineHandle object");
@@ -115,7 +115,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
     auto& pipeline_id = self->m_pipeline_id;
     auto sender_addr = static_cast<std::string>(self->m_client->m_engine.self());
     std::vector<std::pair<void*, size_t>> segment(1);
-    segment[0].first = const_cast<char*>(data);
+    segment[0].first = const_cast<void*>(data);
     segment[0].second = ComputeDataSize(dimensions, type);
     auto bulk = self->m_client->m_engine.expose(segment, tl::bulk_mode::read_only);
     if(req == nullptr) { // synchronous call
