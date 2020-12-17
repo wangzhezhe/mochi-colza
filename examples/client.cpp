@@ -35,12 +35,27 @@ int main(int argc, char** argv) {
             client.makePipelineHandle(g_address, g_provider_id,
                     colza::UUID::from_string(g_pipeline.c_str()));
 
-#if 0
-        pipeline.sayHello();
+        // create some data
+        std::vector<double> mydata(32*54);
+        for(unsigned i=0; i < 32; i++)
+            for(unsigned j=0; j < 54; j++)
+                mydata[i*54+j] = i*j;
+        std::vector<size_t> dimensions = { 32, 54 };
+        std::vector<int64_t> offsets = { 0, 0 };
+        auto type = colza::Type::FLOAT64;
 
+        // stage the data at iteration 42
         int32_t result;
-        pipeline.computeSum(32, 54, &result);
-#endif
+        pipeline.stage("mydata", 42, 0,
+                       dimensions, offsets,
+                       type, reinterpret_cast<char*>(mydata.data()),
+                       &result);
+
+        // execute the pipeline
+        pipeline.execute(42);
+
+        // cleanup the pipeline
+        pipeline.cleanup(42);
 
     } catch(const colza::Exception& ex) {
         std::cerr << ex.what() << std::endl;
