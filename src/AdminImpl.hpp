@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #ifndef __COLZA_ADMIN_IMPL_H
@@ -18,15 +18,11 @@ class AdminImpl {
 
     tl::engine           m_engine;
     tl::remote_procedure m_create_pipeline;
-    tl::remote_procedure m_open_pipeline;
-    tl::remote_procedure m_close_pipeline;
     tl::remote_procedure m_destroy_pipeline;
 
     AdminImpl(const tl::engine& engine)
     : m_engine(engine)
     , m_create_pipeline(m_engine.define("colza_create_pipeline"))
-    , m_open_pipeline(m_engine.define("colza_open_pipeline"))
-    , m_close_pipeline(m_engine.define("colza_close_pipeline"))
     , m_destroy_pipeline(m_engine.define("colza_destroy_pipeline"))
     {}
 

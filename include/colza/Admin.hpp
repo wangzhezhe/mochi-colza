@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #ifndef __COLZA_ADMIN_HPP
@@ -50,7 +50,7 @@ class Admin {
      * @param engine Thallium engine.
      */
     Admin(const tl::engine& engine);
-    
+
     /**
      * @brief Copy constructor.
      */
@@ -80,7 +80,7 @@ class Admin {
      * @brief Check if the Admin instance is valid.
      */
     operator bool() const;
-    
+
     /**
      * @brief Creates a pipeline on the target provider.
      * The config string must be a JSON object acceptable
@@ -96,7 +96,7 @@ class Admin {
                         const std::string& type,
                         const std::string& config,
                         const std::string& token="") const;
-    
+
     /**
      * @brief Creates a pipeline on the target provider.
      * The config string must be a JSON object acceptable
@@ -132,52 +132,6 @@ class Admin {
                         const std::string& token="") const {
         return createPipeline(address, provider_id, type, config.dump(), token);
     }
-
-    /**
-     * @brief Opens an existing pipeline in the target provider.
-     * The config string must be a JSON object acceptable
-     * by the desired backend's open function.
-     *
-     * @param address Address of the target provider.
-     * @param provider_id Provider id.
-     * @param type Type of the pipeline to create.
-     * @param config JSON configuration for the pipeline.
-     */
-    UUID openPipeline(const std::string& address,
-                      uint16_t provider_id,
-                      const std::string& type,
-                      const std::string& config,
-                      const std::string& token="") const;
-
-    /**
-     * @brief Opens an existing database to the target provider.
-     * The config object must be a JSON object acceptable
-     * by the desired backend's open function.
-     *
-     * @param address Address of the target provider.
-     * @param provider_id Provider id.
-     * @param type Type of the pipeline to create.
-     * @param config JSON configuration for the database.
-     */
-    UUID openPipeline(const std::string& address,
-                      uint16_t provider_id,
-                      const std::string& type,
-                      const json& config,
-                      const std::string& token="") const {
-        return openPipeline(address, provider_id, type, config.dump(), token);
-    }
-
-    /**
-     * @brief Closes an open pipeline in the target provider.
-     *
-     * @param address Address of the target provider.
-     * @param provider_id Provider id.
-     * @param pipeline_id UUID of the pipeline to close.
-     */
-    void closePipeline(const std::string& address,
-                        uint16_t provider_id,
-                        const UUID& pipeline_id,
-                        const std::string& token="") const;
 
     /**
      * @brief Destroys an open pipeline in the target provider.

@@ -17,7 +17,7 @@
 namespace tl = thallium;
 
 tl::engine engine;
-std::string pipeline_type = "dummy";
+std::string pipeline_type = "simple_stager";
 
 int main(int argc, char** argv) {
 
@@ -70,14 +70,13 @@ int main(int argc, char** argv) {
     // Run the tests.
     bool wasSucessful = runner.run();
 
-    // Finalize the engine
-    engine.finalize();
-
-    // Finalize SSG
+    ssg_group_destroy(gid);
     ret = ssg_finalize();
     if(ret != SSG_SUCCESS) {
         std::cerr << "Could not finalize SSG" << std::endl;
     }
+
+    engine.finalize();
 
     if(argc >= 2)
        xmlOutFile.close();

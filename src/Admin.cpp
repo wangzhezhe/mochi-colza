@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include "colza/Admin.hpp"
@@ -50,32 +50,6 @@ UUID Admin::createPipeline(const std::string& address,
         throw Exception(result.error());
     }
     return result.value();
-}
-
-UUID Admin::openPipeline(const std::string& address,
-                         uint16_t provider_id,
-                         const std::string& pipeline_type,
-                         const std::string& pipeline_config,
-                         const std::string& token) const {
-    auto endpoint  = self->m_engine.lookup(address);
-    auto ph        = tl::provider_handle(endpoint, provider_id);
-    RequestResult<UUID> result = self->m_open_pipeline.on(ph)(token, pipeline_type, pipeline_config);
-    if(not result.success()) {
-        throw Exception(result.error());
-    }
-    return result.value();
-}
-
-void Admin::closePipeline(const std::string& address,
-                           uint16_t provider_id,
-                           const UUID& pipeline_id,
-                           const std::string& token) const {
-    auto endpoint  = self->m_engine.lookup(address);
-    auto ph        = tl::provider_handle(endpoint, provider_id);
-    RequestResult<bool> result = self->m_close_pipeline.on(ph)(token, pipeline_id);
-    if(not result.success()) {
-        throw Exception(result.error());
-    }
 }
 
 void Admin::destroyPipeline(const std::string& address,

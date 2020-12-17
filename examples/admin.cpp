@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include <colza/Admin.hpp>
@@ -26,7 +26,7 @@ static void parse_command_line(int argc, char** argv);
 int main(int argc, char** argv) {
     parse_command_line(argc, argv);
     spdlog::set_level(spdlog::level::from_str(g_log_level));
-    
+
     // Initialize the thallium server
     tl::engine engine(g_protocol, THALLIUM_CLIENT_MODE);
 
@@ -39,14 +39,6 @@ int main(int argc, char** argv) {
             auto id = admin.createPipeline(g_address, g_provider_id,
                 g_type, g_config, g_token);
             spdlog::info("Created pipeline {}", id.to_string());
-        } else if(g_operation == "open") {
-            auto id = admin.openPipeline(g_address, g_provider_id,
-                g_type, g_config, g_token);
-            spdlog::info("Opened pipeline {}", id.to_string());
-        } else if(g_operation == "close") {
-            admin.closePipeline(g_address, g_provider_id,
-                colza::UUID::from_string(g_pipeline.c_str()), g_token);
-            spdlog::info("Closed pipeline {}", g_pipeline);
         } else if(g_operation == "destroy") {
             admin.destroyPipeline(g_address, g_provider_id,
                 colza::UUID::from_string(g_pipeline.c_str()), g_token);

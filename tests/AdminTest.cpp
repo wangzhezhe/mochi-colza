@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include <colza/Admin.hpp>
@@ -15,7 +15,7 @@ class AdminTest : public CppUnit::TestFixture
     CPPUNIT_TEST( testAdminCreatePipeline );
     CPPUNIT_TEST_SUITE_END();
 
-    static constexpr const char* pipeline_config = "{ \"path\" : \"mydb\" }";
+    static constexpr const char* pipeline_config = "{}";
 
     public:
 
@@ -23,6 +23,7 @@ class AdminTest : public CppUnit::TestFixture
     void tearDown() {}
 
     void testAdminCreatePipeline() {
+
         colza::Admin admin(engine);
         std::string addr = engine.self();
 
