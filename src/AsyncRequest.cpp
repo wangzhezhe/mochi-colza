@@ -55,7 +55,10 @@ void AsyncRequest::wait() const {
 
 bool AsyncRequest::completed() const {
     if(not self) return true;
-    return self->m_async_response.received();
+    bool b = true;
+    for(const auto& r : self->m_async_responses)
+        b = b || r.received();
+    return b;
 }
 
 }

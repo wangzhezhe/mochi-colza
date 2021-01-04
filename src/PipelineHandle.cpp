@@ -89,7 +89,8 @@ void PipelineHandle::stage(const std::string& dataset_name,
         async_request_impl->m_wait_callback =
             [result](AsyncRequestImpl& async_request_impl) {
                 RequestResult<int32_t> response =
-                    async_request_impl.m_async_response.wait();
+                    async_request_impl.m_async_responses[0].wait();
+                    async_request_impl.m_async_responses.clear();
                     if(response.success()) {
                         if(result) *result = response.value();
                     } else {
@@ -150,7 +151,8 @@ void PipelineHandle::stage(const std::string& dataset_name,
         async_request_impl->m_wait_callback =
             [result, bulk=std::move(bulk)](AsyncRequestImpl& async_request_impl) {
                 RequestResult<int32_t> response =
-                    async_request_impl.m_async_response.wait();
+                    async_request_impl.m_async_responses[0].wait();
+                    async_request_impl.m_async_responses.clear();
                     if(response.success()) {
                         if(result) *result = response.value();
                     } else {
@@ -182,7 +184,8 @@ void PipelineHandle::execute(uint64_t iteration,
         async_request_impl->m_wait_callback =
             [result](AsyncRequestImpl& async_request_impl) {
                 RequestResult<int32_t> response =
-                    async_request_impl.m_async_response.wait();
+                    async_request_impl.m_async_responses[0].wait();
+                    async_request_impl.m_async_responses.clear();
                     if(response.success()) {
                         if(result) *result = response.value();
                     } else {
@@ -214,7 +217,8 @@ void PipelineHandle::cleanup(uint64_t iteration,
         async_request_impl->m_wait_callback =
             [result](AsyncRequestImpl& async_request_impl) {
                 RequestResult<int32_t> response =
-                    async_request_impl.m_async_response.wait();
+                    async_request_impl.m_async_responses[0].wait();
+                    async_request_impl.m_async_responses.clear();
                     if(response.success()) {
                         if(result) *result = response.value();
                     } else {
