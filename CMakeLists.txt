@@ -1,4 +1,4 @@
-# (C) 2020 The University of Chicago 
+# (C) 2020 The University of Chicago
 # See COPYRIGHT in top-level directory.
 cmake_minimum_required (VERSION 3.8)
 project (colza C CXX)
@@ -29,8 +29,12 @@ endif ()
 set (CMAKE_PREFIX_PATH "" CACHE STRING "External dependencies path")
 set (BUILD_SHARED_LIBS "ON" CACHE BOOL "Build a shared library")
 
+
+# search for MPI
+find_package (MPI REQUIRED)
+# search for pkg-config
 find_package (PkgConfig REQUIRED)
-# search fo thallium
+# search for thallium
 find_package (thallium REQUIRED)
 # search for uuid
 pkg_check_modules (UUID REQUIRED IMPORTED_TARGET uuid)

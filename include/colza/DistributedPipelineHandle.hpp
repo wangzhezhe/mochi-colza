@@ -3,66 +3,66 @@
  *
  * See COPYRIGHT in top-level directory.
  */
-#ifndef __COLZA_PIPELINE_HANDLE_HPP
-#define __COLZA_PIPELINE_HANDLE_HPP
+#ifndef __COLZA_DISTRIBUTED_PIPELINE_HANDLE_HPP
+#define __COLZA_DISTRIBUTED_PIPELINE_HANDLE_HPP
 
+#include <mpi.h>
 #include <thallium.hpp>
-#include <memory>
-#include <unordered_set>
-#include <nlohmann/json.hpp>
-#include <colza/Client.hpp>
-#include <colza/Types.hpp>
-#include <colza/Exception.hpp>
-#include <colza/AsyncRequest.hpp>
+#include <colza/PipelineHandle.hpp>
 
 namespace colza {
 
 namespace tl = thallium;
 
-class Client;
-class PipelineHandleImpl;
-class DistributedPipelineHandle;
+class DistributedPipelineHandleImpl;
 
 /**
- * @brief A PipelineHandle object is a handle for a remote pipeline
- * on a server. It enables invoking the pipeline's functionalities.
+ * @brief The HashFunction type is an std::function that takes the dataset name,
+ * the iteration number, and the block id, and returns a hash that will guide
+ * selection of the target server.
  */
-class PipelineHandle {
+typedef std::function<uint64_t(const std::string&, uint64_t, uint64_t)> HashFunction;
+
+/**
+ * @brief A DistributedPipelineHandle object is a handle for a set of
+ * remote pipelines on multiple servers. It enables invoking the pipeline's
+ * functionalities across processes.
+ */
+class DistributedPipelineHandle {
 
     friend class Client;
-    friend class DistributedPipelineHandle;
 
     public:
 
     /**
      * @brief Constructor. The resulting PipelineHandle handle will be invalid.
      */
-    PipelineHandle();
+    DistributedPipelineHandle();
 
     /**
      * @brief Copy-constructor.
      */
-    PipelineHandle(const PipelineHandle&);
+    DistributedPipelineHandle(const DistributedPipelineHandle&);
 
     /**
      * @brief Move-constructor.
      */
-    PipelineHandle(PipelineHandle&&);
+    DistributedPipelineHandle(DistributedPipelineHandle&&);
 
     /**
      * @brief Copy-assignment operator.
      */
-    PipelineHandle& operator=(const PipelineHandle&);
+    DistributedPipelineHandle& operator=(const DistributedPipelineHandle&);
 
     /**
      * @brief Move-assignment operator.
      */
-    PipelineHandle& operator=(PipelineHandle&&);
+    DistributedPipelineHandle& operator=(DistributedPipelineHandle&&);
 
     /**
      * @brief Destructor.
      */
-    ~PipelineHandle();
+    ~DistributedPipelineHandle();
 
     /**
      * @brief Returns the client this database has been opened with.
@@ -74,6 +74,22 @@ class PipelineHandle {
      * @brief Checks if the PipelineHandle instance is valid.
      */
     operator bool() const;
+
+    /**
+     * @brief Get the HashFunction that the DistributedPipelineHandle
+     * uses to select the server to send data to.
+     *
+     * @return The HashFunction.
+     */
+    HashFunction getHashFunction() const;
+
+    /**
+     * @brief Set the HashFunction that the DistributedPipelineHandle
+     * will use to select the server to send data to.
+     *
+     * @param hash HashFunction
+     */
+    void setHashFunction(const HashFunction& hash);
 
     /**
      * @brief Stage some data into the pipeline using a bulk handle.
@@ -150,13 +166,13 @@ class PipelineHandle {
 
     /**
      * @brief Constructor is private. Use a Client object
-     * to create a PipelineHandle instance.
+     * to create a DistributedPipelineHandle instance.
      *
      * @param impl Pointer to implementation.
      */
-    PipelineHandle(const std::shared_ptr<PipelineHandleImpl>& impl);
+    DistributedPipelineHandle(const std::shared_ptr<DistributedPipelineHandleImpl>& impl);
 
-    std::shared_ptr<PipelineHandleImpl> self;
+    std::shared_ptr<DistributedPipelineHandleImpl> self;
 };
 
 }

@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include "colza/Exception.hpp"
@@ -47,14 +47,14 @@ AsyncRequest& AsyncRequest::operator=(AsyncRequest&& other) {
 }
 
 void AsyncRequest::wait() const {
-    if(not self) throw Exception("Invalid colza::AsyncRequest object");
+    if(not self) return;
     if(self->m_waited) return;
     self->m_wait_callback(*self);
     self->m_waited = true;
 }
 
 bool AsyncRequest::completed() const {
-    if(not self) throw Exception("Invalid colza::AsyncRequest object");
+    if(not self) return true;
     return self->m_async_response.received();
 }
 

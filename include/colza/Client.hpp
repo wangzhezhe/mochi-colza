@@ -15,6 +15,7 @@ namespace colza {
 
 class ClientImpl;
 class PipelineHandle;
+class DistributedPipelineHandle;
 
 /**
  * @brief The Client object is the main object used to establish
@@ -23,6 +24,7 @@ class PipelineHandle;
 class Client {
 
     friend class PipelineHandle;
+    friend class DistributedPipelineHandle;
 
     public:
 

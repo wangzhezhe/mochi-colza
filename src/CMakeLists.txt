@@ -6,6 +6,7 @@ set (server-src-files
 set (client-src-files
      Client.cpp
      PipelineHandle.cpp
+     DistributedPipelineHandle.cpp
      AsyncRequest.cpp)
 
 set (admin-src-files
@@ -44,7 +45,7 @@ set_target_properties (colza-server
 
 # client library
 add_library (colza-client ${client-src-files})
-target_link_libraries (colza-client thallium PkgConfig::UUID)
+target_link_libraries (colza-client thallium PkgConfig::UUID MPI::MPI_C)
 target_include_directories (colza-client PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories (colza-client BEFORE PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>)
