@@ -42,9 +42,18 @@ int main(int argc, char** argv) {
                                           group_addr_str.data(),
                                           1, &group_config,
                                           nullptr, nullptr);
+    engine.push_prefinalize_callback([](){ ssg_finalize(); });
 
     // Create Mona instance
     mona_instance_t mona = mona_init(g_address.c_str(), NA_TRUE, NULL);
+    // print address for information
+    na_addr_t mona_addr;
+    mona_addr_self(mona, &mona_addr);
+    std::vector<char> mona_addr_buf(256);
+    na_size_t mona_addr_size = 256;
+    mona_addr_to_string(mona, mona_addr_buf.data(), &mona_addr_size, mona_addr);
+    spdlog::info("MoNA address is {}", mona_addr_buf.data());
+    mona_addr_free(mona, mona_addr);
 
     std::vector<snt::Provider> providers;
     for(unsigned i=0 ; i < g_num_providers; i++) {
