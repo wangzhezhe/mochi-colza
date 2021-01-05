@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     }
 
     // Initialize the thallium server
-    engine = tl::engine("na+sm", THALLIUM_SERVER_MODE);
+    engine = tl::engine("ofi+tcp", THALLIUM_SERVER_MODE);
 
     // Initialize SSG
     int ret = ssg_init();
@@ -64,11 +64,16 @@ int main(int argc, char** argv) {
                                           1, &group_config,
                                           nullptr, nullptr);
 
+    // Create Mona instance
+    mona_instance_t mona = mona_init("ofi+tcp", NA_TRUE, NULL);
+
     // Initialize the Sonata provider
-    colza::Provider provider(engine, gid);
+    colza::Provider provider(engine, gid, mona);
 
     // Run the tests.
     bool wasSucessful = runner.run();
+
+    mona_finalize(mona);
 
     ssg_group_destroy(gid);
     ret = ssg_finalize();

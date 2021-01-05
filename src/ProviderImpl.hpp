@@ -7,10 +7,12 @@
 #define __COLZA_PROVIDER_IMPL_H
 
 #include "colza/Backend.hpp"
+#include "colza/Exception.hpp"
 
 #include <thallium.hpp>
 #include <thallium/serialization/stl/string.hpp>
 #include <thallium/serialization/stl/vector.hpp>
+#include <mona.h>
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -48,6 +50,10 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     std::string          m_token;
     ssg_group_id_t       m_gid;
     tl::pool             m_pool;
+    // Mona
+    tl::mutex            m_mona_mtx;
+    mona_instance_t      m_mona;
+    std::string          m_mona_addr;
     // Admin RPC
     tl::remote_procedure m_create_pipeline;
     tl::remote_procedure m_destroy_pipeline;
@@ -60,10 +66,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     std::unordered_map<std::string, std::shared_ptr<Backend>> m_pipelines;
     tl::mutex m_pipelines_mtx;
 
-    ProviderImpl(const tl::engine& engine, ssg_group_id_t gid, uint16_t provider_id, const tl::pool& pool)
+    ProviderImpl(const tl::engine& engine, ssg_group_id_t gid, mona_instance_t mona, uint16_t provider_id, const tl::pool& pool)
     : tl::provider<ProviderImpl>(engine, provider_id)
     , m_gid(gid)
     , m_pool(pool)
+    , m_mona(mona)
     , m_create_pipeline(define("colza_create_pipeline", &ProviderImpl::createPipeline, pool))
     , m_destroy_pipeline(define("colza_destroy_pipeline", &ProviderImpl::destroyPipeline, pool))
     , m_check_pipeline(define("colza_check_pipeline", &ProviderImpl::checkPipeline, pool))
@@ -71,6 +78,21 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_execute(define("colza_execute", &ProviderImpl::execute, pool))
     , m_cleanup(define("colza_cleanup", &ProviderImpl::cleanup, pool))
     {
+        {
+            std::lock_guard<tl::mutex> lock(m_mona_mtx);
+            na_addr_t my_mona_addr;
+            na_return_t ret = mona_addr_self(m_mona, &my_mona_addr);
+            if(ret != NA_SUCCESS)
+                throw Exception("Could not get address from MoNA");
+            char buf[256];
+            na_size_t buf_size = 256;
+            ret = mona_addr_to_string(m_mona, buf, &buf_size, my_mona_addr);
+            mona_addr_free(m_mona, my_mona_addr);
+            if(ret != NA_SUCCESS) {
+                throw Exception("Could not serialize MoNA address");
+            }
+            m_mona_addr = buf;
+        }
         spdlog::trace("[provider:{0}] Registered provider with id {0}", id());
     }
 

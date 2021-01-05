@@ -28,7 +28,14 @@ class ColzaFactory : public bedrock::AbstractServiceFactory {
             return nullptr;
         }
         ssg_group_id_t gid = reinterpret_cast<ssg_group_id_t>(it->second[0].handle);
-        auto provider = new colza::Provider(mid, gid, provider_id, config, pool);
+        it = args.dependencies.find("mona");
+        if(it == args.dependencies.end()) {
+            // this should not happen if Bedrock does its
+            // job resolving dependencies corrrectly.
+            return nullptr;
+        }
+        mona_instance_t mona = reinterpret_cast<mona_instance_t>(it->second[0].handle);
+        auto provider = new colza::Provider(mid, gid, mona, provider_id, config, pool);
         return static_cast<void *>(provider);
     }
 

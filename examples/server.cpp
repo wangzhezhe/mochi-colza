@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include <colza/Provider.hpp>
@@ -23,14 +23,38 @@ static void parse_command_line(int argc, char** argv);
 int main(int argc, char** argv) {
     parse_command_line(argc, argv);
     spdlog::set_level(spdlog::level::from_str(g_log_level));
+
+    // Initialize SSG
+    int ret = ssg_init();
+    if(ret != SSG_SUCCESS) {
+        std::cerr << "Could not initialize SSG" << std::endl;
+    }
+
     tl::engine engine(g_address, THALLIUM_SERVER_MODE, g_use_progress_thread, g_num_threads);
     engine.enable_remote_shutdown();
+
+    // Create SSG group
+    auto self_addr = static_cast<std::string>(engine.self());
+    std::vector<const char*> group_addr_str = { self_addr.c_str() };
+    ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
+    ssg_group_id_t gid = ssg_group_create(engine.get_margo_instance(),
+                                          "mygroup",
+                                          group_addr_str.data(),
+                                          1, &group_config,
+                                          nullptr, nullptr);
+
+    // Create Mona instance
+    mona_instance_t mona = mona_init(g_address.c_str(), NA_TRUE, NULL);
+
     std::vector<snt::Provider> providers;
     for(unsigned i=0 ; i < g_num_providers; i++) {
-        providers.emplace_back(engine, i);
+        providers.emplace_back(engine, gid, mona, i);
     }
     spdlog::info("Server running at address {}", (std::string)engine.self());
     engine.wait_for_finalize();
+
+    mona_finalize(mona);
+
     return 0;
 }
 
