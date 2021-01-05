@@ -32,7 +32,8 @@ add_library (colza-server ${server-src-files} ${backends-src-files})
 target_link_libraries (colza-server
     thallium
     PkgConfig::SSG
-    nlohmann_json::nlohmann_json)
+    nlohmann_json::nlohmann_json
+    PkgConfig::MONA)
 target_include_directories (colza-server PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories (colza-server BEFORE PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>)
