@@ -36,8 +36,6 @@ find_package (MPI REQUIRED)
 find_package (PkgConfig REQUIRED)
 # search for thallium
 find_package (thallium REQUIRED)
-# search for uuid
-pkg_check_modules (UUID REQUIRED IMPORTED_TARGET uuid)
 # search for ssg
 pkg_check_modules (SSG REQUIRED IMPORTED_TARGET ssg)
 # search for nlohmann/json
