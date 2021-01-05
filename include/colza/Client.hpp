@@ -6,6 +6,7 @@
 #ifndef __COLZA_CLIENT_HPP
 #define __COLZA_CLIENT_HPP
 
+#include <colza/ClientCommunicator.hpp>
 #include <colza/PipelineHandle.hpp>
 #include <colza/UUID.hpp>
 #include <thallium.hpp>
@@ -85,7 +86,7 @@ class Client {
      * @param address Address of the provider holding the database.
      * @param provider_id Provider id.
      * @param pipeline_id Pipeline UUID.
-     * @param check Checks if the Database exists by issuing an RPC.
+     * @param check Checks if the Pipeline exists by issuing an RPC.
      *
      * @return a PipelineHandle instance.
      */
@@ -93,6 +94,27 @@ class Client {
                                       uint16_t provider_id,
                                       const UUID& pipeline_id,
                                       bool check = true) const;
+
+    /**
+     * @brief Creates a handle to multiple remote pipelines.
+     * You may set "check" to false if you know for sure that
+     * the corresponding pipeline exists.
+     *
+     * @param comm communicator gathering all clients
+     * @param ssg_group_file SSG group gathering all pipelines
+     * @param provider_id Provider id
+     * @param pipeline_id Pipeline id
+     * @param check Checks if the Pipeline exists by issuing an RPC.
+     *
+     * @return a DistributedPipelineHandle instance.
+     */
+    DistributedPipelineHandle makeDistributedPipelineHandle(
+            const ClientCommunicator* comm,
+            const std::string& ssg_group_file,
+            uint16_t provider_id,
+            const UUID& pipeline_id,
+            bool check = true) const;
+
 
     /**
      * @brief Checks that the Client instance is valid.

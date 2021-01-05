@@ -10,6 +10,7 @@
 #include "AsyncRequestImpl.hpp"
 #include "ClientImpl.hpp"
 #include "DistributedPipelineHandleImpl.hpp"
+#include "PipelineHandleImpl.hpp"
 #include "TypeSizes.hpp"
 
 #include <thallium/serialization/stl/string.hpp>
@@ -108,22 +109,89 @@ void DistributedPipelineHandle::execute(uint64_t iteration,
              int32_t* result,
              AsyncRequest* req) const {
     if(not self) throw Exception("Invalid colza::DistributedPipelineHandle object");
-    MPI_Barrier(self->m_comm);
+    self->m_comm->barrier();
     if(self->m_pipelines.size() == 0)
         return;
     auto num_pipelines = self->m_pipelines.size();
-    int num_processes = 0;
-    MPI_Comm_size(self->m_comm, &num_processes);
-    int my_rank;
-    MPI_Comm_rank(self->m_comm, &my_rank);
+    int num_processes = self->m_comm->size();
+    int my_rank = self->m_comm->rank();
     if(my_rank != 0) return;
-    // TODO
+
+    auto& rpc = self->m_client->m_execute;
+    std::vector<uint32_t> results(num_pipelines);
+    std::vector<tl::async_response> async_responses;
+
+    for(auto& pipeline : self->m_pipelines) {
+        auto async_response = rpc.on(pipeline->m_ph).async(pipeline->m_pipeline_id, iteration);
+        async_responses.push_back(std::move(async_response));
+    }
+
+    auto async_request_impl =
+        std::make_shared<AsyncRequestImpl>(std::move(async_responses));
+
+    async_request_impl->m_wait_callback =
+            [result](AsyncRequestImpl& async_request_impl) {
+                    RequestResult<int32_t> response;
+                    for(auto& r : async_request_impl.m_async_responses) {
+                        RequestResult<int32_t> local_response = r.wait();
+                        if(!local_response.success())
+                            response = local_response;
+                    }
+                    async_request_impl.m_async_responses.clear();
+                    if(response.success()) {
+                        if(result) *result = response.value();
+                    } else {
+                        throw Exception(response.error());
+                    }
+            };
+    if(req)
+        *req = AsyncRequest(std::move(async_request_impl));
+    else
+        AsyncRequest(std::move(async_request_impl)).wait();
 }
 
 void DistributedPipelineHandle::cleanup(uint64_t iteration,
              int32_t* result,
              AsyncRequest* req) const {
     if(not self) throw Exception("Invalid colza::DistributedPipelineHandle object");
-    // TODO
+    self->m_comm->barrier();
+    if(self->m_pipelines.size() == 0)
+        return;
+    auto num_pipelines = self->m_pipelines.size();
+    int num_processes = self->m_comm->size();
+    int my_rank = self->m_comm->rank();
+    if(my_rank != 0) return;
+
+    auto& rpc = self->m_client->m_cleanup;
+    std::vector<uint32_t> results(num_pipelines);
+    std::vector<tl::async_response> async_responses;
+
+    for(auto& pipeline : self->m_pipelines) {
+        auto async_response = rpc.on(pipeline->m_ph).async(pipeline->m_pipeline_id, iteration);
+        async_responses.push_back(std::move(async_response));
+    }
+
+    auto async_request_impl =
+        std::make_shared<AsyncRequestImpl>(std::move(async_responses));
+
+    async_request_impl->m_wait_callback =
+            [result](AsyncRequestImpl& async_request_impl) {
+                    RequestResult<int32_t> response;
+                    for(auto& r : async_request_impl.m_async_responses) {
+                        RequestResult<int32_t> local_response = r.wait();
+                        if(!local_response.success())
+                            response = local_response;
+                    }
+                    async_request_impl.m_async_responses.clear();
+                    if(response.success()) {
+                        if(result) *result = response.value();
+                    } else {
+                        throw Exception(response.error());
+                    }
+            };
+    if(req)
+        *req = AsyncRequest(std::move(async_request_impl));
+    else
+        AsyncRequest(std::move(async_request_impl)).wait();
 }
 }

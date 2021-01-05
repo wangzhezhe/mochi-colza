@@ -13,6 +13,7 @@ namespace colza {
 
 class AsyncRequestImpl;
 class PipelineHandle;
+class DistributedPipelineHandle;
 
 /**
  * @brief AsyncRequest objects are used to keep track of
@@ -21,6 +22,7 @@ class PipelineHandle;
 class AsyncRequest {
 
     friend PipelineHandle;
+    friend DistributedPipelineHandle;
 
     public:
 
