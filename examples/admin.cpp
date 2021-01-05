@@ -36,12 +36,10 @@ int main(int argc, char** argv) {
         colza::Admin admin(engine);
 
         if(g_operation == "create") {
-            auto id = admin.createPipeline(g_address, g_provider_id,
-                g_type, g_config, g_token);
-            spdlog::info("Created pipeline {}", id.to_string());
+            admin.createPipeline(g_address, g_provider_id, g_pipeline, g_type, g_config, g_token);
+            spdlog::info("Created pipeline {}", g_pipeline);
         } else if(g_operation == "destroy") {
-            admin.destroyPipeline(g_address, g_provider_id,
-                colza::UUID::from_string(g_pipeline.c_str()), g_token);
+            admin.destroyPipeline(g_address, g_provider_id, g_pipeline, g_token);
             spdlog::info("Destroyed pipeline {}", g_pipeline);
         }
 
@@ -61,10 +59,10 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::ValueArg<unsigned>    providerArg("p", "provider", "Provider id to contact (default 0)", false, 0, "int");
         TCLAP::ValueArg<std::string> tokenArg("s","token","Security token", false,"","string");
         TCLAP::ValueArg<std::string> typeArg("t","type","Pipeline type", false,"dummy","string");
-        TCLAP::ValueArg<std::string> pipelineArg("r","pipeline","Pipeline id", false, colza::UUID().to_string(),"string");
+        TCLAP::ValueArg<std::string> pipelineArg("n","pipeline","Pipeline name", false,"","string");
         TCLAP::ValueArg<std::string> configArg("c","config","Pipeline configuration", false,"","string");
         TCLAP::ValueArg<std::string> logLevel("v","verbose", "Log level (trace, debug, info, warning, error, critical, off)", false, "info", "string");
-        std::vector<std::string> options = { "create", "open", "close", "destroy" };
+        std::vector<std::string> options = { "create", "destroy" };
         TCLAP::ValuesConstraint<std::string> allowedOptions(options);
         TCLAP::ValueArg<std::string> operationArg("x","exec","Operation to execute",true,"create",&allowedOptions);
         cmd.add(addressArg);

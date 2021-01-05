@@ -53,13 +53,13 @@ void PipelineHandle::stage(const std::string& dataset_name,
     if(not self) throw Exception("Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_stage;
     auto& ph  = self->m_ph;
-    auto& pipeline_id = self->m_pipeline_id;
+    auto& pipeline_name = self->m_name;
     auto sender_addr = origin_addr == "" ?
         static_cast<std::string>(self->m_client->m_engine.self()) :
         origin_addr;
     if(req == nullptr) { // synchronous call
         RequestResult<int32_t> response = rpc.on(ph)(
-                pipeline_id,
+                pipeline_name,
                 sender_addr,
                 dataset_name,
                 iteration,
@@ -75,7 +75,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
         }
     } else { // asynchronous call
         auto async_response = rpc.on(ph).async(
-                pipeline_id,
+                pipeline_name,
                 sender_addr,
                 dataset_name,
                 iteration,
@@ -113,7 +113,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
     if(not self) throw Exception("Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_stage;
     auto& ph  = self->m_ph;
-    auto& pipeline_id = self->m_pipeline_id;
+    auto& pipeline_name = self->m_name;
     auto sender_addr = static_cast<std::string>(self->m_client->m_engine.self());
     std::vector<std::pair<void*, size_t>> segment(1);
     segment[0].first = const_cast<void*>(data);
@@ -121,7 +121,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
     auto bulk = self->m_client->m_engine.expose(segment, tl::bulk_mode::read_only);
     if(req == nullptr) { // synchronous call
         RequestResult<int32_t> response = rpc.on(ph)(
-                pipeline_id,
+                pipeline_name,
                 sender_addr,
                 dataset_name,
                 iteration,
@@ -137,7 +137,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
         }
     } else { // asynchronous call
         auto async_response = rpc.on(ph).async(
-                pipeline_id,
+                pipeline_name,
                 sender_addr,
                 dataset_name,
                 iteration,
@@ -169,16 +169,16 @@ void PipelineHandle::execute(uint64_t iteration,
     if(not self) throw Exception("Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_execute;
     auto& ph  = self->m_ph;
-    auto& pipeline_id = self->m_pipeline_id;
+    auto& pipeline_name = self->m_name;
     if(req == nullptr) { // synchronous call
-        RequestResult<int32_t> response = rpc.on(ph)(pipeline_id, iteration);
+        RequestResult<int32_t> response = rpc.on(ph)(pipeline_name, iteration);
         if(response.success()) {
             if(result) *result = response.value();
         } else {
             throw Exception(response.error());
         }
     } else { // asynchronous call
-        auto async_response = rpc.on(ph).async(pipeline_id, iteration);
+        auto async_response = rpc.on(ph).async(pipeline_name, iteration);
         auto async_request_impl =
             std::make_shared<AsyncRequestImpl>(std::move(async_response));
         async_request_impl->m_wait_callback =
@@ -202,16 +202,16 @@ void PipelineHandle::cleanup(uint64_t iteration,
     if(not self) throw Exception("Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_cleanup;
     auto& ph  = self->m_ph;
-    auto& pipeline_id = self->m_pipeline_id;
+    auto& pipeline_name = self->m_name;
     if(req == nullptr) { // synchronous call
-        RequestResult<int32_t> response = rpc.on(ph)(pipeline_id, iteration);
+        RequestResult<int32_t> response = rpc.on(ph)(pipeline_name, iteration);
         if(response.success()) {
             if(result) *result = response.value();
         } else {
             throw Exception(response.error());
         }
     } else { // asynchronous call
-        auto async_response = rpc.on(ph).async(pipeline_id, iteration);
+        auto async_response = rpc.on(ph).async(pipeline_name, iteration);
         auto async_request_impl =
             std::make_shared<AsyncRequestImpl>(std::move(async_response));
         async_request_impl->m_wait_callback =

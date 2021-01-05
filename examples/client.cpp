@@ -32,8 +32,7 @@ int main(int argc, char** argv) {
 
         // Open the Database "mydatabase" from provider 0
         colza::PipelineHandle pipeline =
-            client.makePipelineHandle(g_address, g_provider_id,
-                    colza::UUID::from_string(g_pipeline.c_str()));
+            client.makePipelineHandle(g_address, g_provider_id, g_pipeline);
 
         // create some data
         std::vector<double> mydata(32*54);
@@ -70,7 +69,7 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::CmdLine cmd("Colza client", ' ', "0.1");
         TCLAP::ValueArg<std::string> addressArg("a","address","Address or server", true,"","string");
         TCLAP::ValueArg<unsigned>    providerArg("p", "provider", "Provider id to contact (default 0)", false, 0, "int");
-        TCLAP::ValueArg<std::string> pipelineArg("r","pipeline","Pipeline id", true, colza::UUID().to_string(),"string");
+        TCLAP::ValueArg<std::string> pipelineArg("n","pipeline","Pipeline name", true, "","string");
         TCLAP::ValueArg<std::string> logLevel("v","verbose", "Log level (trace, debug, info, warning, error, critical, off)", false, "info", "string");
         cmd.add(addressArg);
         cmd.add(providerArg);

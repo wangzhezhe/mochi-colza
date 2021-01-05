@@ -20,55 +20,58 @@ class PipelineTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
     static constexpr const char* pipeline_config = "{}";
-    colza::UUID pipeline_id;
 
     public:
 
     void setUp() {
+        const std::string pipeline_name = "abc";
         colza::Admin admin(engine);
         std::string addr = engine.self();
-        pipeline_id = admin.createPipeline(addr, 0, pipeline_type, pipeline_config);
+        admin.createPipeline(addr, 0, pipeline_name, pipeline_type, pipeline_config);
     }
 
     void tearDown() {
+        const std::string pipeline_name = "abc";
         colza::Admin admin(engine);
         std::string addr = engine.self();
-        admin.destroyPipeline(addr, 0, pipeline_id);
+        admin.destroyPipeline(addr, 0, pipeline_name);
     }
 
     void testMakePipelineHandle() {
+        const std::string pipeline_name = "abc";
         colza::Client client(engine);
         std::string addr = engine.self();
 
         CPPUNIT_ASSERT_NO_THROW_MESSAGE(
                 "client.makePipelineHandle should not throw for valid id.",
-                client.makePipelineHandle(addr, 0, pipeline_id));
+                client.makePipelineHandle(addr, 0, pipeline_name));
 
-        auto bad_id = colza::UUID::generate();
+        auto bad_name = std::string("bad_pipeline");
         CPPUNIT_ASSERT_THROW_MESSAGE(
                 "client.makePipelineHandle should throw for invalid id.",
-                client.makePipelineHandle(addr, 0, bad_id),
+                client.makePipelineHandle(addr, 0, bad_name),
                 colza::Exception);
 
         CPPUNIT_ASSERT_THROW_MESSAGE(
                 "client.makePipelineHandle should throw for invalid provider.",
-                client.makePipelineHandle(addr, 1, pipeline_id),
+                client.makePipelineHandle(addr, 1, pipeline_name),
                 std::exception);
 
         CPPUNIT_ASSERT_NO_THROW_MESSAGE(
                 "client.makePipelineHandle should not throw for invalid id when check=false.",
-                client.makePipelineHandle(addr, 0, bad_id, false));
+                client.makePipelineHandle(addr, 0, bad_name, false));
 
         CPPUNIT_ASSERT_NO_THROW_MESSAGE(
                 "client.makePipelineHandle should not throw for invalid provider when check=false.",
-                client.makePipelineHandle(addr, 1, pipeline_id, false));
+                client.makePipelineHandle(addr, 1, pipeline_name, false));
     }
 
     void testStage() {
+        const std::string pipeline_name = "abc";
         colza::Client client(engine);
         std::string addr = engine.self();
 
-        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_id);
+        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_name);
 
         // create some data
         std::vector<double> mydata(32*54);
@@ -92,10 +95,11 @@ class PipelineTest : public CppUnit::TestFixture
     }
 
     void testExecute() {
+        const std::string pipeline_name = "abc";
         colza::Client client(engine);
         std::string addr = engine.self();
 
-        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_id);
+        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_name);
 
         int32_t result;
         CPPUNIT_ASSERT_NO_THROW_MESSAGE(
@@ -107,10 +111,11 @@ class PipelineTest : public CppUnit::TestFixture
     }
 
     void testCleanup() {
+        const std::string pipeline_name = "abc";
         colza::Client client(engine);
         std::string addr = engine.self();
 
-        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_id);
+        colza::PipelineHandle my_pipeline = client.makePipelineHandle(addr, 0, pipeline_name);
 
         int32_t result;
         CPPUNIT_ASSERT_NO_THROW_MESSAGE(

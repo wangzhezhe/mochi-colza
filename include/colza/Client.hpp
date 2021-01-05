@@ -8,7 +8,6 @@
 
 #include <colza/ClientCommunicator.hpp>
 #include <colza/PipelineHandle.hpp>
-#include <colza/UUID.hpp>
 #include <thallium.hpp>
 #include <memory>
 
@@ -85,14 +84,14 @@ class Client {
      *
      * @param address Address of the provider holding the database.
      * @param provider_id Provider id.
-     * @param pipeline_id Pipeline UUID.
+     * @param pipeline_name Pipeline name.
      * @param check Checks if the Pipeline exists by issuing an RPC.
      *
      * @return a PipelineHandle instance.
      */
     PipelineHandle makePipelineHandle(const std::string& address,
                                       uint16_t provider_id,
-                                      const UUID& pipeline_id,
+                                      const std::string& pipeline_name,
                                       bool check = true) const;
 
     /**
@@ -103,7 +102,7 @@ class Client {
      * @param comm communicator gathering all clients
      * @param ssg_group_file SSG group gathering all pipelines
      * @param provider_id Provider id
-     * @param pipeline_id Pipeline id
+     * @param pipeline_name Pipeline name
      * @param check Checks if the Pipeline exists by issuing an RPC.
      *
      * @return a DistributedPipelineHandle instance.
@@ -112,7 +111,7 @@ class Client {
             const ClientCommunicator* comm,
             const std::string& ssg_group_file,
             uint16_t provider_id,
-            const UUID& pipeline_id,
+            const std::string& pipeline_name,
             bool check = true) const;
 
 

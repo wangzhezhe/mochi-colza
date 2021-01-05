@@ -7,7 +7,6 @@
 #define __COLZA_PROVIDER_IMPL_H
 
 #include "colza/Backend.hpp"
-#include "colza/UUID.hpp"
 
 #include <thallium.hpp>
 #include <thallium/serialization/stl/string.hpp>
@@ -21,13 +20,13 @@
 #define FIND_PIPELINE(__var__) \
         std::shared_ptr<Backend> __var__;\
         do {\
-            std::lock_guard<tl::mutex> lock(m_backends_mtx);\
-            auto it = m_backends.find(pipeline_id);\
-            if(it == m_backends.end()) {\
+            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);\
+            auto it = m_pipelines.find(pipeline_name);\
+            if(it == m_pipelines.end()) {\
                 result.success() = false;\
-                result.error() = "Pipeline with UUID "s + pipeline_id.to_string() + " not found";\
+                result.error() = "Pipeline with name "s + pipeline_name + " not found";\
                 req.respond(result);\
-                spdlog::error("[provider:{}] Pipeline {} not found", id(), pipeline_id.to_string());\
+                spdlog::error("[provider:{}] Pipeline {} not found", id(), pipeline_name);\
                 return;\
             }\
             __var__ = it->second;\
@@ -58,8 +57,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     tl::remote_procedure m_execute;
     tl::remote_procedure m_cleanup;
     // Backends
-    std::unordered_map<UUID, std::shared_ptr<Backend>> m_backends;
-    tl::mutex m_backends_mtx;
+    std::unordered_map<std::string, std::shared_ptr<Backend>> m_pipelines;
+    tl::mutex m_pipelines_mtx;
 
     ProviderImpl(const tl::engine& engine, ssg_group_id_t gid, uint16_t provider_id, const tl::pool& pool)
     : tl::provider<ProviderImpl>(engine, provider_id)
@@ -85,6 +84,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
     void createPipeline(const tl::request& req,
                         const std::string& token,
+                        const std::string& pipeline_name,
                         const std::string& pipeline_type,
                         const std::string& pipeline_config) {
 
@@ -92,8 +92,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         spdlog::trace("[provider:{}]    => type = {}", id(), pipeline_type);
         spdlog::trace("[provider:{}]    => config = {}", id(), pipeline_config);
 
-        auto pipeline_id = UUID::generate();
-        RequestResult<UUID> result;
+        RequestResult<bool> result;
 
         if(m_token.size() > 0 && m_token != token) {
             result.success() = false;
@@ -110,51 +109,51 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             result.error() = e.what();
             result.success() = false;
             spdlog::error("[provider:{}] Could not parse pipeline configuration for pipeline {}",
-                    id(), pipeline_id.to_string());
+                    id(), pipeline_name);
             req.respond(result);
             return;
         }
 
-        std::unique_ptr<Backend> backend;
+        std::unique_ptr<Backend> pipeline;
         try {
             PipelineFactoryArgs args;
             args.engine = get_engine();
             args.config = json_config;
             args.gid = m_gid;
-            backend = PipelineFactory::createPipeline(pipeline_type, args);
+            pipeline = PipelineFactory::createPipeline(pipeline_type, args);
         } catch(const std::exception& ex) {
             result.success() = false;
             result.error() = ex.what();
             spdlog::error("[provider:{}] Error when creating pipeline {} of type {}:",
-                    id(), pipeline_id.to_string(), pipeline_type);
+                    id(), pipeline_name, pipeline_type);
             spdlog::error("[provider:{}]    => {}", id(), result.error());
             req.respond(result);
             return;
         }
 
-        if(not backend) {
+        if(not pipeline) {
             result.success() = false;
             result.error() = "Unknown pipeline type "s + pipeline_type;
             spdlog::error("[provider:{}] Unknown pipeline type {} for pipeline {}",
-                    id(), pipeline_type, pipeline_id.to_string());
+                    id(), pipeline_type, pipeline_name);
             req.respond(result);
             return;
         } else {
-            std::lock_guard<tl::mutex> lock(m_backends_mtx);
-            m_backends[pipeline_id] = std::move(backend);
-            result.value() = pipeline_id;
+            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+            m_pipelines[pipeline_name] = std::move(pipeline);
+            result.value() = true;
         }
 
         req.respond(result);
         spdlog::trace("[provider:{}] Successfully created pipeline {} of type {}",
-                id(), pipeline_id.to_string(), pipeline_type);
+                id(), pipeline_name, pipeline_type);
     }
 
     void destroyPipeline(const tl::request& req,
                          const std::string& token,
-                         const UUID& pipeline_id) {
+                         const std::string& pipeline_name) {
         RequestResult<bool> result;
-        spdlog::trace("[provider:{}] Received destroyPipeline request for pipeline {}", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Received destroyPipeline request for pipeline {}", id(), pipeline_name);
 
         if(m_token.size() > 0 && m_token != token) {
             result.success() = false;
@@ -165,36 +164,36 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         }
 
         {
-            std::lock_guard<tl::mutex> lock(m_backends_mtx);
+            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
 
-            if(m_backends.count(pipeline_id) == 0) {
+            if(m_pipelines.count(pipeline_name) == 0) {
                 result.success() = false;
-                result.error() = "Pipeline "s + pipeline_id.to_string() + " not found";
+                result.error() = "Pipeline "s + pipeline_name + " not found";
                 req.respond(result);
-                spdlog::error("[provider:{}] Pipeline {} not found", id(), pipeline_id.to_string());
+                spdlog::error("[provider:{}] Pipeline {} not found", id(), pipeline_name);
                 return;
             }
 
-            result = m_backends[pipeline_id]->destroy();
-            m_backends.erase(pipeline_id);
+            result = m_pipelines[pipeline_name]->destroy();
+            m_pipelines.erase(pipeline_name);
         }
 
         req.respond(result);
-        spdlog::trace("[provider:{}] Pipeline {} successfully destroyed", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Pipeline {} successfully destroyed", id(), pipeline_name);
     }
 
     void checkPipeline(const tl::request& req,
-                       const UUID& pipeline_id) {
-        spdlog::trace("[provider:{}] Received checkPipeline request for pipeline {}", id(), pipeline_id.to_string());
+                       const std::string& pipeline_name) {
+        spdlog::trace("[provider:{}] Received checkPipeline request for pipeline {}", id(), pipeline_name);
         RequestResult<bool> result;
         FIND_PIPELINE(pipeline);
         result.success() = true;
         req.respond(result);
-        spdlog::trace("[provider:{}] Code successfully executed on pipeline {}", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Code successfully executed on pipeline {}", id(), pipeline_name);
     }
 
     void stage(const tl::request& req,
-               const UUID& pipeline_id,
+               const std::string& pipeline_name,
                const std::string& sender_addr,
                const std::string& dataset_name,
                uint64_t iteration,
@@ -203,35 +202,35 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                const std::vector<int64_t>& offsets,
                const Type& type,
                const thallium::bulk& data) {
-        spdlog::trace("[provider:{}] Received stage request for pipeline {}", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Received stage request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
         FIND_PIPELINE(pipeline);
         result = pipeline->stage(
             sender_addr, dataset_name, iteration, block_id, dimensions, offsets, type, data);
         req.respond(result);
-        spdlog::trace("[provider:{}] Data successfully staged on pipeline {}", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Data successfully staged on pipeline {}", id(), pipeline_name);
     }
 
     void execute(const tl::request& req,
-                 const UUID& pipeline_id,
+                 const std::string& pipeline_name,
                  uint64_t iteration) {
-        spdlog::trace("[provider:{}] Received execute request for pipeline {}", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Received execute request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
         FIND_PIPELINE(pipeline);
         result = pipeline->execute(iteration);
         req.respond(result);
-        spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_name);
     }
 
     void cleanup(const tl::request& req,
-                 const UUID& pipeline_id,
+                 const std::string& pipeline_name,
                  uint64_t iteration) {
-        spdlog::trace("[provider:{}] Received cleanup request for pipeline {}", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Received cleanup request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
         FIND_PIPELINE(pipeline);
         result = pipeline->cleanup(iteration);
         req.respond(result);
-        spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_id.to_string());
+        spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_name);
     }
 };
 

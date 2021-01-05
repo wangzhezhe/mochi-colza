@@ -6,15 +6,18 @@
 #ifndef __COLZA_PIPELINE_HANDLE_IMPL_H
 #define __COLZA_PIPELINE_HANDLE_IMPL_H
 
-#include <colza/UUID.hpp>
+#include <string>
+#include <memory>
 
 namespace colza {
+
+class ClientImpl;
 
 class PipelineHandleImpl {
 
     public:
 
-    UUID                        m_pipeline_id;
+    std::string                 m_name;
     std::shared_ptr<ClientImpl> m_client;
     tl::provider_handle         m_ph;
 
@@ -22,8 +25,8 @@ class PipelineHandleImpl {
 
     PipelineHandleImpl(const std::shared_ptr<ClientImpl>& client,
                        tl::provider_handle&& ph,
-                       const UUID& pipeline_id)
-    : m_pipeline_id(pipeline_id)
+                       const std::string& pipeline_name)
+    : m_name(pipeline_name)
     , m_client(client)
     , m_ph(std::move(ph)) {}
 };

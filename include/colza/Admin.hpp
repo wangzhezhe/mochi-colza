@@ -6,12 +6,11 @@
 #ifndef __COLZA_ADMIN_HPP
 #define __COLZA_ADMIN_HPP
 
+#include <colza/Exception.hpp>
 #include <nlohmann/json.hpp>
 #include <thallium.hpp>
 #include <string>
 #include <memory>
-#include <colza/Exception.hpp>
-#include <colza/UUID.hpp>
 
 namespace colza {
 
@@ -88,11 +87,13 @@ class Admin {
      *
      * @param address Address of the target provider.
      * @param provider_id Provider id.
+     * @param name Name of the pipeline.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
      */
-    UUID createPipeline(const std::string& address,
+    void createPipeline(const std::string& address,
                         uint16_t provider_id,
+                        const std::string& name,
                         const std::string& type,
                         const std::string& config,
                         const std::string& token="") const;
@@ -104,15 +105,17 @@ class Admin {
      *
      * @param address Address of the target provider.
      * @param provider_id Provider id.
+     * @param name Pipeline name.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
      */
-    UUID createPipeline(const std::string& address,
+    void createPipeline(const std::string& address,
                         uint16_t provider_id,
+                        const std::string& name,
                         const std::string& type,
                         const char* config,
                         const std::string& token="") const {
-        return createPipeline(address, provider_id, type, std::string(config), token);
+        return createPipeline(address, provider_id, name, type, std::string(config), token);
     }
 
     /**
@@ -122,15 +125,17 @@ class Admin {
      *
      * @param address Address of the target provider.
      * @param provider_id Provider id.
+     * @param name Pipeline name.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
      */
-    UUID createPipeline(const std::string& address,
+    void createPipeline(const std::string& address,
                         uint16_t provider_id,
+                        const std::string& name,
                         const std::string& type,
                         const json& config,
                         const std::string& token="") const {
-        return createPipeline(address, provider_id, type, config.dump(), token);
+        return createPipeline(address, provider_id, name, type, config.dump(), token);
     }
 
     /**
@@ -142,7 +147,7 @@ class Admin {
      */
     void destroyPipeline(const std::string& address,
                          uint16_t provider_id,
-                         const UUID& pipeline_id,
+                         const std::string& pipeline_name,
                          const std::string& token="") const;
 
     /**

@@ -1,6 +1,6 @@
 /*
  * (C) 2020 The University of Chicago
- * 
+ *
  * See COPYRIGHT in top-level directory.
  */
 #include "colza/Exception.hpp"
@@ -50,17 +50,17 @@ Client::operator bool() const {
 PipelineHandle Client::makePipelineHandle(
         const std::string& address,
         uint16_t provider_id,
-        const UUID& pipeline_id,
+        const std::string& pipeline_name,
         bool check) const {
     auto endpoint  = self->m_engine.lookup(address);
     auto ph        = tl::provider_handle(endpoint, provider_id);
     RequestResult<bool> result;
     result.success() = true;
     if(check) {
-        result = self->m_check_pipeline.on(ph)(pipeline_id);
+        result = self->m_check_pipeline.on(ph)(pipeline_name);
     }
     if(result.success()) {
-        auto pipeline_impl = std::make_shared<PipelineHandleImpl>(self, std::move(ph), pipeline_id);
+        auto pipeline_impl = std::make_shared<PipelineHandleImpl>(self, std::move(ph), pipeline_name);
         return PipelineHandle(pipeline_impl);
     } else {
         throw Exception(result.error());
