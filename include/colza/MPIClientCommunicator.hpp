@@ -38,6 +38,10 @@ class MPIClientCommunicator : public ClientCommunicator {
         MPI_Barrier(m_comm);
     }
 
+    void bcast(void* buffer, int bytes, int root) const override {
+        MPI_Bcast(buffer, bytes, MPI_BYTE, root, m_comm);
+    }
+
 };
 
 }

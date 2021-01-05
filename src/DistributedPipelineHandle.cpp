@@ -122,7 +122,7 @@ void DistributedPipelineHandle::execute(uint64_t iteration,
     std::vector<tl::async_response> async_responses;
 
     for(auto& pipeline : self->m_pipelines) {
-        auto async_response = rpc.on(pipeline->m_ph).async(pipeline->m_name, iteration);
+        auto async_response = rpc.on(pipeline.self->m_ph).async(pipeline.self->m_name, iteration);
         async_responses.push_back(std::move(async_response));
     }
 
@@ -167,7 +167,7 @@ void DistributedPipelineHandle::cleanup(uint64_t iteration,
     std::vector<tl::async_response> async_responses;
 
     for(auto& pipeline : self->m_pipelines) {
-        auto async_response = rpc.on(pipeline->m_ph).async(pipeline->m_name, iteration);
+        auto async_response = rpc.on(pipeline.self->m_ph).async(pipeline.self->m_name, iteration);
         async_responses.push_back(std::move(async_response));
     }
 

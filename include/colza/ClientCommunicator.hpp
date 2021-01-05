@@ -26,6 +26,8 @@ class ClientCommunicator {
 
     virtual void barrier() const = 0;
 
+    virtual void bcast(void* buffer, int bytes, int root) const = 0;
+
 };
 
 }

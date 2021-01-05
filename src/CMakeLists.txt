@@ -44,7 +44,7 @@ set_target_properties (colza-server
 
 # client library
 add_library (colza-client ${client-src-files})
-target_link_libraries (colza-client thallium MPI::MPI_C)
+target_link_libraries (colza-client PkgConfig::SSG thallium MPI::MPI_C)
 target_include_directories (colza-client PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories (colza-client BEFORE PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>)
