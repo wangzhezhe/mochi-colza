@@ -151,6 +151,80 @@ class Admin {
                          const std::string& token="") const;
 
     /**
+     * @brief Creates a pipeline on the target providers
+     * listed in an SSG group file.
+     * The config string must be a JSON object acceptable
+     * by the desired backend's creation function.
+     *
+     * @param ssg_file SSG file listing providers.
+     * @param provider_id Provider id.
+     * @param name Name of the pipeline.
+     * @param type Type of the pipeline to create.
+     * @param config JSON configuration for the pipeline.
+     */
+    void createDistributedPipeline(const std::string& ssg_file,
+                        uint16_t provider_id,
+                        const std::string& name,
+                        const std::string& type,
+                        const std::string& config,
+                        const std::string& token="") const;
+
+    /**
+     * @brief Creates a pipeline on the target providers
+     * listed in an SSG group file.
+     * The config string must be a JSON object acceptable
+     * by the desired backend's creation function.
+     *
+     * @param ssg_file SSG file listing providers.
+     * @param provider_id Provider id.
+     * @param name Pipeline name.
+     * @param type Type of the pipeline to create.
+     * @param config JSON configuration for the pipeline.
+     */
+    void createDistributedPipeline(const std::string& ssg_file,
+                        uint16_t provider_id,
+                        const std::string& name,
+                        const std::string& type,
+                        const char* config,
+                        const std::string& token="") const {
+        return createPipeline(ssg_file, provider_id, name, type, std::string(config), token);
+    }
+
+    /**
+     * @brief Creates a pipeline on the providers present in the
+     * provided SSG group.
+     * The config object must be a JSON object acceptable
+     * by the desired backend's creation function.
+     *
+     * @param ssg_file SSG file containing addresses of providers.
+     * @param provider_id Provider id.
+     * @param name Pipeline name.
+     * @param type Type of the pipeline to create.
+     * @param config JSON configuration for the pipeline.
+     */
+    void createDistributedPipeline(const std::string& ssg_file,
+                        uint16_t provider_id,
+                        const std::string& name,
+                        const std::string& type,
+                        const json& config,
+                        const std::string& token="") const {
+        return createDistributedPipeline(ssg_file, provider_id, name, type, config.dump(), token);
+    }
+
+    /**
+     * @brief Destroys an open pipeline in the providers listed in the SSG group.
+     *
+     * @param ssg_file SSG file containing addresses of providers.
+     * @param provider_id Provider id.
+     * @param pipeline_name Name of the pipeline to destroy.
+     */
+    void destroyDistributedPipeline(const std::string& ssg_file,
+                         uint16_t provider_id,
+                         const std::string& pipeline_name,
+                         const std::string& token="") const;
+
+
+    /**
      * @brief Shuts down the target server. The Thallium engine
      * used by the server must have remote shutdown enabled.
      *

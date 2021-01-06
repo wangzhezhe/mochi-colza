@@ -8,12 +8,15 @@
 
 #include <mpi.h>
 #include <thallium.hpp>
+#include <colza/Types.hpp>
+#include <colza/AsyncRequest.hpp>
 #include <colza/PipelineHandle.hpp>
 
 namespace colza {
 
 namespace tl = thallium;
 
+class Client;
 class DistributedPipelineHandleImpl;
 
 /**

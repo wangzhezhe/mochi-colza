@@ -6,6 +6,8 @@
 #include <colza/Provider.hpp>
 #include <iostream>
 #include <vector>
+#include <mpi.h>
+#include <ssg-mpi.h>
 #include <spdlog/spdlog.h>
 #include <tclap/CmdLine.h>
 
@@ -22,6 +24,11 @@ int main(int argc, char** argv) {
     parse_command_line(argc, argv);
     spdlog::set_level(spdlog::level::from_str(g_log_level));
 
+    // Initialize MPI
+    MPI_Init(&argc, &argv);
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     // Initialize SSG
     int ret = ssg_init();
     if(ret != SSG_SUCCESS) {
@@ -31,19 +38,17 @@ int main(int argc, char** argv) {
     tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, g_num_threads);
     engine.enable_remote_shutdown();
 
-    // Create SSG group
-    auto self_addr = static_cast<std::string>(engine.self());
-    std::vector<const char*> group_addr_str = { self_addr.c_str() };
+    // Create SSG group using MPI
     ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
-    ssg_group_id_t gid = ssg_group_create(engine.get_margo_instance(),
+    ssg_group_id_t gid = ssg_group_create_mpi(engine.get_margo_instance(),
                                           "mygroup",
-                                          group_addr_str.data(),
-                                          1, &group_config,
+                                          MPI_COMM_WORLD,
+                                          &group_config,
                                           nullptr, nullptr);
     engine.push_prefinalize_callback([](){ ssg_finalize(); });
 
     // Write SSG file
-    if(!g_ssg_file.empty()) {
+    if(rank == 0 && !g_ssg_file.empty()) {
         int ret = ssg_group_id_store(g_ssg_file.c_str(), gid, SSG_ALL_MEMBERS);
         if(ret != SSG_SUCCESS) {
             spdlog::critical("Could not store SSG file {}", g_ssg_file);
@@ -69,6 +74,8 @@ int main(int argc, char** argv) {
     engine.wait_for_finalize();
 
     mona_finalize(mona);
+
+    MPI_Finalize();
 
     return 0;
 }

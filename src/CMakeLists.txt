@@ -57,7 +57,7 @@ set_target_properties (colza-client
 
 # admin library
 add_library (colza-admin ${admin-src-files})
-target_link_libraries (colza-admin thallium nlohmann_json::nlohmann_json)
+target_link_libraries (colza-admin PkgConfig::SSG thallium nlohmann_json::nlohmann_json)
 target_include_directories (colza-admin PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories (colza-admin BEFORE PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>)

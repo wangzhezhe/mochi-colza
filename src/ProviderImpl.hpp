@@ -126,7 +126,9 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
         json json_config;
         try {
-            json_config = json::parse(pipeline_config);
+            if(!pipeline_config.empty()) {
+                json_config = json::parse(pipeline_config);
+            }
         } catch(json::parse_error& e) {
             result.error() = e.what();
             result.success() = false;

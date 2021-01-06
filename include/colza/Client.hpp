@@ -8,6 +8,7 @@
 
 #include <colza/ClientCommunicator.hpp>
 #include <colza/PipelineHandle.hpp>
+#include <colza/DistributedPipelineHandle.hpp>
 #include <thallium.hpp>
 #include <memory>
 

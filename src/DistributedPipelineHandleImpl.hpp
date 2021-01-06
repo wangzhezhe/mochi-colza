@@ -9,6 +9,7 @@
 #include "colza/ClientCommunicator.hpp"
 #include "colza/PipelineHandle.hpp"
 #include <ssg.h>
+#include <spdlog/spdlog.h>
 #include <vector>
 #include <memory>
 
@@ -46,7 +47,8 @@ class DistributedPipelineHandleImpl {
 
     ~DistributedPipelineHandleImpl() {
         if(m_gid != SSG_GROUP_ID_INVALID) {
-            ssg_group_destroy(m_gid);
+            ssg_group_unobserve(m_gid);
+            //ssg_group_destroy(m_gid);
         }
     }
 };
