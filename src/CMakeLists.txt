@@ -122,7 +122,7 @@ install (FILES "${CMAKE_CURRENT_BINARY_DIR}/colza-config.cmake"
          DESTINATION ${colza-pkg} )
 install (DIRECTORY ../include/colza
          DESTINATION include
-         FILES_MATCHING PATTERN "*.h")
+         FILES_MATCHING PATTERN "*.hpp")
 install (FILES "${CMAKE_CURRENT_BINARY_DIR}/colza-server.pc"
                "${CMAKE_CURRENT_BINARY_DIR}/colza-client.pc"
                "${CMAKE_CURRENT_BINARY_DIR}/colza-admin.pc"
