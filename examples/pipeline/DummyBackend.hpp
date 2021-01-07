@@ -83,6 +83,14 @@ class DummyPipeline : public colza::Backend {
     virtual ~DummyPipeline() = default;
 
     /**
+     * @brief Update the array of Mona addresses associated with
+     * the SSG group.
+     *
+     * @param addresses Array of Mona addresses.
+     */
+    void updateMonaAddresses(const std::vector<na_addr_t>& addresses) override;
+
+    /**
      * @brief Stage some data.
      */
     colza::RequestResult<int32_t> stage(

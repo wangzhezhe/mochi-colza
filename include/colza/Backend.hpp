@@ -15,6 +15,7 @@
 #include <functional>
 #include <nlohmann/json.hpp>
 #include <thallium.hpp>
+#include <mona.h>
 
 /**
  * @brief Helper class to register backend types into the backend factory.
@@ -68,6 +69,15 @@ class Backend {
      * @brief Destructor.
      */
     virtual ~Backend() = default;
+
+    /**
+     * @brief Update the array of Mona addresses associated with
+     * the SSG group.
+     *
+     * @param addresses Array of addresses.
+     */
+    virtual void updateMonaAddresses(
+        const std::vector<na_addr_t>& addresses) = 0;
 
     /**
      * @brief Stage some data for a future execution of the pipeline.

@@ -52,9 +52,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     ssg_group_id_t       m_gid;
     tl::pool             m_pool;
     // Mona
-    tl::mutex            m_mona_mtx;
-    mona_instance_t      m_mona;
-    std::string          m_mona_addr;
+    tl::mutex              m_mona_mtx;
+    tl::condition_variable m_mona_cv;
+    mona_instance_t        m_mona;
+    std::string            m_mona_self_addr;
+    std::vector<na_addr_t> m_mona_addresses;
     // Admin RPC
     tl::remote_procedure m_create_pipeline;
     tl::remote_procedure m_destroy_pipeline;
@@ -63,6 +65,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     tl::remote_procedure m_stage;
     tl::remote_procedure m_execute;
     tl::remote_procedure m_cleanup;
+    // Other RPCs
+    tl::remote_procedure m_get_mona_addr;
     // Backends
     std::unordered_map<std::string, std::shared_ptr<Backend>> m_pipelines;
     tl::mutex m_pipelines_mtx;
@@ -78,6 +82,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_stage(define("colza_stage", &ProviderImpl::stage, pool))
     , m_execute(define("colza_execute", &ProviderImpl::execute, pool))
     , m_cleanup(define("colza_cleanup", &ProviderImpl::cleanup, pool))
+    , m_get_mona_addr(define("colza_get_mona_addr", &ProviderImpl::getMonaAddress, pool))
     {
         {
             std::lock_guard<tl::mutex> lock(m_mona_mtx);
@@ -92,8 +97,10 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             if(ret != NA_SUCCESS) {
                 throw Exception("Could not serialize MoNA address");
             }
-            m_mona_addr = buf;
+            m_mona_self_addr = buf;
         }
+        m_mona_cv.notify_all();
+        _resolveMonaAddresses();
         spdlog::trace("[provider:{0}] Registered provider with id {0}", id());
     }
 
@@ -105,6 +112,10 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         m_stage.deregister();
         m_execute.deregister();
         m_cleanup.deregister();
+        m_pipelines.clear();
+        for(auto& addr : m_mona_addresses) {
+            mona_addr_free(m_mona, addr);
+        }
         spdlog::trace("[provider:{}]    => done!", id());
     }
 
@@ -172,6 +183,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             m_pipelines[name] = std::move(pipeline);
         }
 
+        pipeline->updateMonaAddresses(m_mona_addresses);
+
         spdlog::trace("[provider:{}] Successfully created pipeline {} of type {}",
                 id(), name, type);
     }
@@ -223,47 +236,6 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             req.respond(result);
             return;
         }
-#if 0
-        if(!library.empty()) {
-            void* handle = dlopen(library.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
-            if(!handle) {
-                result.success() = false;
-                result.error() = dlerror();
-                req.respond(result);
-                return;
-            }
-        }
-
-        std::unique_ptr<Backend> pipeline;
-        try {
-            PipelineFactoryArgs args;
-            args.engine = get_engine();
-            args.config = json_config;
-            args.gid = m_gid;
-            pipeline = PipelineFactory::createPipeline(pipeline_type, args);
-        } catch(const std::exception& ex) {
-            result.success() = false;
-            result.error() = ex.what();
-            spdlog::error("[provider:{}] Error when creating pipeline {} of type {}:",
-                    id(), pipeline_name, pipeline_type);
-            spdlog::error("[provider:{}]    => {}", id(), result.error());
-            req.respond(result);
-            return;
-        }
-
-        if(not pipeline) {
-            result.success() = false;
-            result.error() = "Unknown pipeline type "s + pipeline_type;
-            spdlog::error("[provider:{}] Unknown pipeline type {} for pipeline {}",
-                    id(), pipeline_type, pipeline_name);
-            req.respond(result);
-            return;
-        } else {
-            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
-            m_pipelines[pipeline_name] = std::move(pipeline);
-            result.value() = true;
-        }
-#endif
         result.success() = true;
         req.respond(result);
     }
@@ -350,6 +322,65 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         result = pipeline->cleanup(iteration);
         req.respond(result);
         spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_name);
+    }
+
+    void getMonaAddress(const tl::request& req) {
+        spdlog::trace("[provider:{}] Received request for MoNA address", id());
+        RequestResult<std::string> result;
+        {
+            std::unique_lock<tl::mutex> guard(m_mona_mtx);
+            while(m_mona_self_addr.empty()) {
+                m_mona_cv.wait(guard);
+            }
+            result.value() = m_mona_self_addr;
+        }
+        req.respond(result);
+    }
+
+    na_addr_t _requestMonaAddressFromSSGMember(ssg_member_id_t member_id) {
+        hg_addr_t hg_addr = ssg_get_group_member_addr(m_gid, member_id);
+        auto ph = tl::provider_handle(get_engine(), hg_addr, get_provider_id(), false);
+        RequestResult<std::string> result;
+        bool ok = false;
+        while(!ok) {
+            try {
+                result = m_get_mona_addr.on(ph)();
+                ok = true;
+            } catch(...) {
+                // TODO improve that to retry only in relevant
+                // cases and sleep for increasing amounts of time
+                spdlog::trace("[provider:{}] Failed to get MoNA address of member {}, retrying...", id(), member_id);
+                tl::thread::sleep(get_engine(), 100);
+            }
+        }
+        na_addr_t addr = NA_ADDR_NULL;
+        na_return_t ret = mona_addr_lookup(m_mona, result.value().c_str(), &addr);
+        if(ret != NA_SUCCESS)
+            throw Exception("mona_addr_lookup failed with error code "s + std::to_string(ret));
+        return addr;
+    }
+
+    void _resolveMonaAddresses() {
+        // TODO we could speed up this function if the getMonaAddress RPC
+        // were to piggy-back the addresses it already knows
+        spdlog::trace("[provider:{}] Resolving MoNA addressed of SSG group", id());
+        auto self_id = ssg_get_self_id(get_engine().get_margo_instance());
+        auto self_rank = ssg_get_group_member_rank(m_gid, self_id);
+        auto group_size = ssg_get_group_size(m_gid);
+        m_mona_addresses.resize(group_size);
+        for(int i = 0; i < group_size; i++) {
+            int j = (self_rank + i) % group_size;
+            if(i == 0) {
+                na_addr_t self_mona_addr;
+                mona_addr_self(m_mona, &self_mona_addr);
+                m_mona_addresses[j] = self_mona_addr;
+            } else {
+                ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(m_gid, j);
+                m_mona_addresses[j] = _requestMonaAddressFromSSGMember(member_id);
+            }
+        }
+        spdlog::trace("[provider:{}] Done resolving MoNA addressed of SSG group", id());
+        spdlog::trace("[provider:{}] {} addresses found in SSG group", id(), group_size);
     }
 };
 
