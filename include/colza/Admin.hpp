@@ -90,12 +90,15 @@ class Admin {
      * @param name Name of the pipeline.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
+     * @param library Dynamic library to load
+     * @param token Security token
      */
     void createPipeline(const std::string& address,
                         uint16_t provider_id,
                         const std::string& name,
                         const std::string& type,
                         const std::string& config,
+                        const std::string& library="",
                         const std::string& token="") const;
 
     /**
@@ -108,14 +111,17 @@ class Admin {
      * @param name Pipeline name.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
+     * @param library Dynamic library to load
+     * @param token Security token
      */
     void createPipeline(const std::string& address,
                         uint16_t provider_id,
                         const std::string& name,
                         const std::string& type,
                         const char* config,
+                        const std::string& library="",
                         const std::string& token="") const {
-        return createPipeline(address, provider_id, name, type, std::string(config), token);
+        return createPipeline(address, provider_id, name, type, std::string(config), library, token);
     }
 
     /**
@@ -128,14 +134,17 @@ class Admin {
      * @param name Pipeline name.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
+     * @param library Dynamic library to load
+     * @param token Security token
      */
     void createPipeline(const std::string& address,
                         uint16_t provider_id,
                         const std::string& name,
                         const std::string& type,
                         const json& config,
+                        const std::string& library="",
                         const std::string& token="") const {
-        return createPipeline(address, provider_id, name, type, config.dump(), token);
+        return createPipeline(address, provider_id, name, type, config.dump(), library, token);
     }
 
     /**
@@ -161,12 +170,15 @@ class Admin {
      * @param name Name of the pipeline.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
+     * @param library Dynamic library to load
+     * @param token Security token
      */
     void createDistributedPipeline(const std::string& ssg_file,
                         uint16_t provider_id,
                         const std::string& name,
                         const std::string& type,
                         const std::string& config,
+                        const std::string& library="",
                         const std::string& token="") const;
 
     /**
@@ -180,14 +192,17 @@ class Admin {
      * @param name Pipeline name.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
+     * @param library Dynamic library to load
+     * @param token Security token
      */
     void createDistributedPipeline(const std::string& ssg_file,
                         uint16_t provider_id,
                         const std::string& name,
                         const std::string& type,
                         const char* config,
+                        const std::string& library="",
                         const std::string& token="") const {
-        return createPipeline(ssg_file, provider_id, name, type, std::string(config), token);
+        return createDistributedPipeline(ssg_file, provider_id, name, type, std::string(config), library, token);
     }
 
     /**
@@ -201,14 +216,17 @@ class Admin {
      * @param name Pipeline name.
      * @param type Type of the pipeline to create.
      * @param config JSON configuration for the pipeline.
+     * @param library Dynamic library to load
+     * @param token Security token
      */
     void createDistributedPipeline(const std::string& ssg_file,
                         uint16_t provider_id,
                         const std::string& name,
                         const std::string& type,
                         const json& config,
+                        const std::string& library="",
                         const std::string& token="") const {
-        return createDistributedPipeline(ssg_file, provider_id, name, type, config.dump(), token);
+        return createDistributedPipeline(ssg_file, provider_id, name, type, config.dump(), library, token);
     }
 
     /**

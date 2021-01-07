@@ -16,6 +16,7 @@ static std::string g_protocol;
 static std::string g_pipeline;
 static std::string g_type;
 static std::string g_config;
+static std::string g_library;
 static std::string g_token;
 static std::string g_operation;
 static std::string g_log_level = "info";
@@ -35,7 +36,7 @@ int main(int argc, char** argv) {
         colza::Admin admin(engine);
 
         if(g_operation == "create") {
-            admin.createPipeline(g_address, 0, g_pipeline, g_type, g_config, g_token);
+            admin.createPipeline(g_address, 0, g_pipeline, g_type, g_config, g_library, g_token);
             spdlog::info("Created pipeline {}", g_pipeline);
         } else if(g_operation == "destroy") {
             admin.destroyPipeline(g_address, 0, g_pipeline, g_token);
@@ -56,6 +57,7 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::CmdLine cmd("Colza admin", ' ', "0.1");
         TCLAP::ValueArg<std::string> addressArg("a","address","Address or server", true,"","string");
         TCLAP::ValueArg<std::string> tokenArg("q","token","Security token", false,"","string");
+        TCLAP::ValueArg<std::string> libraryArg("l","library","Dynamic library containing pipeline definition",false,"","string");
         TCLAP::ValueArg<std::string> typeArg("t","type","Pipeline type", false,"simple_stager","string");
         TCLAP::ValueArg<std::string> pipelineArg("n","pipeline","Pipeline name", false,"","string");
         TCLAP::ValueArg<std::string> configArg("c","config","Pipeline configuration", false,"","string");
@@ -70,9 +72,11 @@ void parse_command_line(int argc, char** argv) {
         cmd.add(configArg);
         cmd.add(pipelineArg);
         cmd.add(logLevel);
+        cmd.add(libraryArg);
         cmd.add(operationArg);
         cmd.parse(argc, argv);
         g_address = addressArg.getValue();
+        g_library = libraryArg.getValue();
         g_token = tokenArg.getValue();
         g_config = configArg.getValue();
         g_type = typeArg.getValue();

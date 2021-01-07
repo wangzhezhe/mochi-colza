@@ -46,10 +46,12 @@ void Admin::createPipeline(const std::string& address,
                            const std::string& pipeline_name,
                            const std::string& pipeline_type,
                            const std::string& pipeline_config,
+                           const std::string& library,
                            const std::string& token) const {
     auto endpoint  = self->m_engine.lookup(address);
     auto ph        = tl::provider_handle(endpoint, provider_id);
-    RequestResult<bool> result = self->m_create_pipeline.on(ph)(token, pipeline_name, pipeline_type, pipeline_config);
+    RequestResult<bool> result = self->m_create_pipeline.on(ph)(
+            token, pipeline_name, pipeline_type, pipeline_config, library);
     if(not result.success()) {
         throw Exception(result.error());
     }
@@ -72,6 +74,7 @@ void Admin::createDistributedPipeline(const std::string& ssg_file,
                         const std::string& name,
                         const std::string& type,
                         const std::string& config,
+                        const std::string& library,
                         const std::string& token) const {
     ssg_group_id_t gid;
     int num_addrs = -1;
@@ -98,7 +101,7 @@ void Admin::createDistributedPipeline(const std::string& ssg_file,
     std::vector<tl::managed<tl::thread>> ults;
     for(const auto& addr : addresses) {
         ults.push_back(es.make_thread([&, this](){
-            createPipeline(addr, provider_id, name, type, config, token);
+            createPipeline(addr, provider_id, name, type, config, library, token);
         }));
     }
 

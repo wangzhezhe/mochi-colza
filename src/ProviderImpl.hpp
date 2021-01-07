@@ -17,6 +17,7 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
+#include <dlfcn.h>
 #include <tuple>
 
 #define FIND_PIPELINE(__var__) \
@@ -32,7 +33,7 @@
                 return;\
             }\
             __var__ = it->second;\
-        }while(0)
+        } while(0)
 
 namespace colza {
 
@@ -108,11 +109,16 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                         const std::string& token,
                         const std::string& pipeline_name,
                         const std::string& pipeline_type,
-                        const std::string& pipeline_config) {
+                        const std::string& pipeline_config,
+                        const std::string& library) {
 
         spdlog::trace("[provider:{}] Received createPipeline request", id());
         spdlog::trace("[provider:{}]    => type = {}", id(), pipeline_type);
-        spdlog::trace("[provider:{}]    => config = {}", id(), pipeline_config);
+        if(!pipeline_config.empty())
+            spdlog::trace("[provider:{}]    => config = {}", id(), pipeline_config);
+        if(!library.empty()) {
+            spdlog::trace("[provider:{}]    => library = {}", id(), library);
+        }
 
         RequestResult<bool> result;
 
@@ -136,6 +142,16 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                     id(), pipeline_name);
             req.respond(result);
             return;
+        }
+
+        if(!library.empty()) {
+            void* handle = dlopen(library.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
+            if(!handle) {
+                result.success() = false;
+                result.error() = dlerror();
+                req.respond(result);
+                return;
+            }
         }
 
         std::unique_ptr<Backend> pipeline;
