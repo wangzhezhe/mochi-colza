@@ -183,7 +183,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             m_pipelines[name] = std::move(pipeline);
         }
 
-        pipeline->updateMonaAddresses(m_mona_addresses);
+        pipeline->updateMonaAddresses(m_mona, m_mona_addresses);
 
         spdlog::trace("[provider:{}] Successfully created pipeline {} of type {}",
                 id(), name, type);

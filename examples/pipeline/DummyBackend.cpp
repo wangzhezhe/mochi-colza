@@ -8,9 +8,12 @@
 
 COLZA_REGISTER_BACKEND(dummy, DummyPipeline);
 
-void DummyPipeline::updateMonaAddresses(const std::vector<na_addr_t>& addresses) {
+void DummyPipeline::updateMonaAddresses(
+        mona_instance_t mona,
+        const std::vector<na_addr_t>& addresses) {
     std::cerr << "Mona addresses have been updated" << std::endl;
     (void)addresses;
+    (void)mona;
 }
 
 colza::RequestResult<int32_t> DummyPipeline::execute(

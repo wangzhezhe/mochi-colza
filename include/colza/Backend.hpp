@@ -74,9 +74,11 @@ class Backend {
      * @brief Update the array of Mona addresses associated with
      * the SSG group.
      *
+     * @param mona Mona instance.
      * @param addresses Array of addresses.
      */
     virtual void updateMonaAddresses(
+        mona_instance_t mona,
         const std::vector<na_addr_t>& addresses) = 0;
 
     /**
