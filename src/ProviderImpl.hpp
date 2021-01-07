@@ -102,7 +102,78 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         m_create_pipeline.deregister();
         m_destroy_pipeline.deregister();
         m_check_pipeline.deregister();
+        m_stage.deregister();
+        m_execute.deregister();
+        m_cleanup.deregister();
         spdlog::trace("[provider:{}]    => done!", id());
+    }
+
+    void processConfig(const std::string& config) {
+        if(config.empty()) return;
+        json json_config;
+        try {
+            json_config = json::parse(config);
+        } catch(...) {
+            throw Exception("Could not parse JSON configuration");
+        }
+        auto it = json_config.find("pipelines");
+        if(it == json_config.end()) return;
+        auto pipelines = *it;
+        if(!pipelines.is_object()) {
+            throw Exception("'pipeline' entry should be an object");
+        }
+        for(auto& p : pipelines.items()) {
+            std::string name = p.key();
+            auto& pipeline = p.value();
+            if(!pipeline.is_object()) {
+                throw Exception("Pipeline '"s + name + "' should be an object");
+            }
+            std::string library = pipeline.value("library", std::string());
+            json config = pipeline.value("config", json::object());
+            std::string type = pipeline.value("type", std::string());
+            if(type.empty()) {
+                throw Exception("No type provided for pipeline '"s + name + "'");
+            }
+            _createPipeline(name, type, config, library);
+        }
+    }
+
+    void _createPipeline(const std::string& name,
+                         const std::string& type,
+                         const json& config,
+                         const std::string& library) {
+        if(!library.empty()) {
+            void* handle = dlopen(library.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
+            if(!handle) {
+                throw Exception(dlerror());
+            }
+        }
+
+        std::unique_ptr<Backend> pipeline;
+        try {
+            PipelineFactoryArgs args;
+            args.engine = get_engine();
+            args.config = config;
+            args.gid = m_gid;
+            pipeline = PipelineFactory::createPipeline(type, args);
+        } catch(const std::exception& ex) {
+            spdlog::error("[provider:{}] Error when creating pipeline {} of type {}:",
+                    id(), name, type);
+            spdlog::error("[provider:{}]    => {}", id(), ex.what());
+            throw Exception(ex.what());
+        }
+
+        if(not pipeline) {
+            spdlog::error("[provider:{}] Unknown pipeline type {} for pipeline {}",
+                    id(), type, name);
+            throw Exception("Unknown pipeline type "s + type);
+        } else {
+            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+            m_pipelines[name] = std::move(pipeline);
+        }
+
+        spdlog::trace("[provider:{}] Successfully created pipeline {} of type {}",
+                id(), name, type);
     }
 
     void createPipeline(const tl::request& req,
@@ -144,6 +215,15 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             return;
         }
 
+        try {
+            _createPipeline(pipeline_name, pipeline_type, json_config, library);
+        } catch(Exception& e) {
+            result.error() = e.what();
+            result.success() = false;
+            req.respond(result);
+            return;
+        }
+#if 0
         if(!library.empty()) {
             void* handle = dlopen(library.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
             if(!handle) {
@@ -183,10 +263,9 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             m_pipelines[pipeline_name] = std::move(pipeline);
             result.value() = true;
         }
-
+#endif
+        result.success() = true;
         req.respond(result);
-        spdlog::trace("[provider:{}] Successfully created pipeline {} of type {}",
-                id(), pipeline_name, pipeline_type);
     }
 
     void destroyPipeline(const tl::request& req,

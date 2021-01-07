@@ -5,6 +5,7 @@
  */
 #include <colza/Provider.hpp>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <mpi.h>
 #include <ssg-mpi.h>
@@ -17,6 +18,7 @@ static std::string g_address     = "na+sm";
 static int         g_num_threads = 0;
 static std::string g_log_level   = "info";
 static std::string g_ssg_file    = "";
+static std::string g_config_file = "";
 
 static void parse_command_line(int argc, char** argv);
 
@@ -68,7 +70,15 @@ int main(int argc, char** argv) {
     spdlog::debug("MoNA address is {}", mona_addr_buf.data());
     mona_addr_free(mona, mona_addr);
 
-    colza::Provider provider(engine, gid, mona);
+    // Read config file
+    std::string config;
+    if(!g_config_file.empty()) {
+        std::ifstream t(g_config_file.c_str());
+        config = std::string((std::istreambuf_iterator<char>(t)),
+                              std::istreambuf_iterator<char>());
+    }
+
+    colza::Provider provider(engine, gid, mona, 0, config);
 
     spdlog::info("Server running at address {}", (std::string)engine.self());
     engine.wait_for_finalize();
@@ -88,15 +98,18 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::ValueArg<std::string> logLevel("v","verbose",
                 "Log level (trace, debug, info, warning, error, critical, off)", false, "info", "string");
         TCLAP::ValueArg<std::string> ssgFile("s", "ssg-file", "SSG file name", false, "", "string");
+        TCLAP::ValueArg<std::string> configFile("c", "config", "config file name", false, "", "string");
         cmd.add(addressArg);
         cmd.add(numThreads);
         cmd.add(logLevel);
         cmd.add(ssgFile);
+        cmd.add(configFile);
         cmd.parse(argc, argv);
         g_address     = addressArg.getValue();
         g_num_threads = numThreads.getValue();
         g_log_level   = logLevel.getValue();
         g_ssg_file    = ssgFile.getValue();
+        g_config_file = configFile.getValue();
     } catch(TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);
