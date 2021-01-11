@@ -8,6 +8,7 @@
 
 #include "colza/Backend.hpp"
 #include "colza/Exception.hpp"
+#include "SSGUtil.hpp"
 
 #include <thallium.hpp>
 #include <thallium/serialization/stl/string.hpp>
@@ -50,6 +51,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
     std::string          m_token;
     ssg_group_id_t       m_gid;
+    uint64_t             m_group_hash = 0;
     tl::pool             m_pool;
     // Mona
     tl::mutex              m_mona_mtx;
@@ -86,6 +88,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_cleanup(define("colza_cleanup", &ProviderImpl::cleanup, pool))
     , m_get_mona_addr(define("colza_get_mona_addr", &ProviderImpl::getMonaAddress, pool))
     {
+        m_group_hash = ComputeGroupHash(m_gid);
         {
             std::lock_guard<tl::mutex> lock(m_mona_mtx);
             na_addr_t my_mona_addr;
@@ -155,6 +158,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                          const std::string& type,
                          const json& config,
                          const std::string& library) {
+        spdlog::trace("AAAA");
         if(!library.empty()) {
             void* handle = dlopen(library.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
             if(!handle) {
@@ -162,6 +166,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             }
         }
 
+        spdlog::trace("BBBB");
         std::unique_ptr<Backend> pipeline;
         try {
             PipelineFactoryArgs args;
@@ -180,12 +185,14 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             spdlog::error("[provider:{}] Unknown pipeline type {} for pipeline {}",
                     id(), type, name);
             throw Exception("Unknown pipeline type "s + type);
-        } else {
-            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
-            m_pipelines[name] = std::move(pipeline);
         }
 
         pipeline->updateMonaAddresses(m_mona, m_mona_addresses);
+
+        {
+            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+            m_pipelines[name] = std::move(pipeline);
+        }
 
         spdlog::trace("[provider:{}] Successfully created pipeline {} of type {}",
                 id(), name, type);
@@ -395,6 +402,18 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         }
         spdlog::trace("[provider:{}] Done resolving MoNA addressed of SSG group", id());
         spdlog::trace("[provider:{}] {} addresses found in SSG group", id(), group_size);
+    }
+
+    void _membershipUpdate(ssg_member_id_t member_id,
+                           ssg_member_update_type_t update_type) {
+        m_group_hash = UpdateGroupHash(m_group_hash, member_id);
+        (void)update_type;
+    }
+
+    static void membershipUpdate(void* p, ssg_member_id_t member_id,
+            ssg_member_update_type_t update_type) {
+        auto provider = static_cast<Provider*>(p);
+        provider->self->_membershipUpdate(member_id, update_type);
     }
 };
 

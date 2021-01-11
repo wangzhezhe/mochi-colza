@@ -8,6 +8,6 @@ spack:
   - cppunit
   - tclap
   - mochi-bedrock
-  - mochi-ssg
+  - mochi-ssg@master
   - mochi-mona
   concretization: together

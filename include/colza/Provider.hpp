@@ -23,6 +23,8 @@ class ProviderImpl;
  */
 class Provider {
 
+    friend class ProviderImpl;
+
     public:
 
     /**

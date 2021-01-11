@@ -8,6 +8,7 @@
 
 #include "colza/ClientCommunicator.hpp"
 #include "colza/PipelineHandle.hpp"
+#include "SSGUtil.hpp"
 #include <ssg.h>
 #include <spdlog/spdlog.h>
 #include <vector>
@@ -25,7 +26,9 @@ class DistributedPipelineHandleImpl {
         return block_id;
     };
     std::vector<PipelineHandle> m_pipelines;
-    ssg_group_id_t              m_gid; // only valid in rank 0
+    // SSG info are only valid on rank 0
+    ssg_group_id_t              m_gid;
+    uint64_t                    m_group_hash = 0;
 
     DistributedPipelineHandleImpl(
         const ClientCommunicator* comm,
@@ -33,7 +36,9 @@ class DistributedPipelineHandleImpl {
         ssg_group_id_t gid)
     : m_comm(comm)
     , m_client(client)
-    , m_gid(gid) {}
+    , m_gid(gid) {
+        m_group_hash = ComputeGroupHash(gid);
+    }
 
     DistributedPipelineHandleImpl(
         const ClientCommunicator* comm,
