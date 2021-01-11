@@ -22,7 +22,7 @@
 #include <tuple>
 
 #define FIND_PIPELINE(__var__) \
-        std::shared_ptr<Backend> __var__;\
+        std::shared_ptr<PipelineState> __var__;\
         do {\
             std::lock_guard<tl::mutex> lock(m_pipelines_mtx);\
             auto it = m_pipelines.find(pipeline_name);\
@@ -40,6 +40,12 @@ namespace colza {
 
 using namespace std::string_literals;
 namespace tl = thallium;
+
+struct PipelineState {
+    std::shared_ptr<Backend> pipeline;
+    bool                     active = false;
+    uint64_t                 iteration = 0;
+};
 
 class ProviderImpl : public tl::provider<ProviderImpl> {
 
@@ -74,8 +80,9 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     tl::remote_procedure m_cleanup;
     // Other RPCs
     tl::remote_procedure m_get_mona_addr;
-    // Backends
-    std::unordered_map<std::string, std::shared_ptr<Backend>> m_pipelines;
+    // Pipelines
+    std::unordered_map<std::string, std::shared_ptr<PipelineState>> m_pipelines;
+    size_t m_num_active_pipelines = 0;
     tl::mutex m_pipelines_mtx;
 
     ProviderImpl(const tl::engine& engine, ssg_group_id_t gid, mona_instance_t mona, uint16_t provider_id, const tl::pool& pool)
@@ -204,7 +211,9 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
         {
             std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
-            m_pipelines[name] = std::move(pipeline);
+            auto state = std::make_shared<PipelineState>();
+            state->pipeline = std::move(pipeline);
+            m_pipelines[name] = std::move(state);
         }
 
         spdlog::trace("[provider:{}] Successfully created pipeline {} of type {}",
@@ -287,7 +296,17 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                 return;
             }
 
-            result = m_pipelines[pipeline_name]->destroy();
+            auto state = m_pipelines[pipeline_name];
+            if(state->active) {
+                result.success() = false;
+                result.error() = "Cannot destroy a pipeline while active";
+                req.respond(result);
+                spdlog::error("[provider:{}] Pipeline {} could not be destroyed "
+                              "because it is active", id(), pipeline_name);
+                return;
+            }
+
+            result = state->pipeline->destroy();
             m_pipelines.erase(pipeline_name);
         }
 
@@ -299,7 +318,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                        const std::string& pipeline_name) {
         spdlog::trace("[provider:{}] Received checkPipeline request for pipeline {}", id(), pipeline_name);
         RequestResult<bool> result;
-        FIND_PIPELINE(pipeline);
+        FIND_PIPELINE(state);
         result.success() = true;
         req.respond(result);
         spdlog::trace("[provider:{}] Code successfully executed on pipeline {}", id(), pipeline_name);
@@ -310,11 +329,32 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                uint64_t iteration) {
         spdlog::trace("[provider:{}] Received start request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
-        FIND_PIPELINE(pipeline);
-        result = pipeline->start(iteration);
+        FIND_PIPELINE(state);
+        auto pipeline = state->pipeline;
+        if(state->active) {
+            result.value() = 0;
+            result.success() = false;
+            result.error() = "Pipeline is already active";
+        } else if(state->iteration != 0 && state->iteration >= iteration) {
+            result.value() = 0;
+            result.success() = false;
+            result.error() = "Pipeline cannot be started at an inferior iteration number";
+        } else {
+            {
+                std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+                m_num_active_pipelines += 1;
+            }
+            result = pipeline->start(iteration);
+            spdlog::trace("[provider:{}] Pipeline {} successfuly started iteration {}",
+                          id(), pipeline_name, iteration);
+            if(result.success())
+                state->iteration = iteration;
+            else {
+                std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+                m_num_active_pipelines -= 1;
+            }
+        }
         req.respond(result);
-        spdlog::trace("[provider:{}] Pipeline {} successfuly started iteration {}",
-                      id(), pipeline_name, iteration);
     }
 
     void stage(const tl::request& req,
@@ -329,11 +369,22 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                const thallium::bulk& data) {
         spdlog::trace("[provider:{}] Received stage request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
-        FIND_PIPELINE(pipeline);
-        result = pipeline->stage(
-            sender_addr, dataset_name, iteration, block_id, dimensions, offsets, type, data);
+        FIND_PIPELINE(state);
+        auto pipeline = state->pipeline;
+        if(!state->active) {
+            result.value() = 0;
+            result.success() = false;
+            result.error() = "Pipeline is not active";
+        } else if(state->iteration != iteration) {
+            result.value() = 0;
+            result.success() = false;
+            result.error() = "Invalid iteration";
+        } else {
+            result = pipeline->stage(
+                    sender_addr, dataset_name, iteration,
+                    block_id, dimensions, offsets, type, data);
+        }
         req.respond(result);
-        spdlog::trace("[provider:{}] Data successfully staged on pipeline {}", id(), pipeline_name);
     }
 
     void execute(const tl::request& req,
@@ -341,10 +392,20 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                  uint64_t iteration) {
         spdlog::trace("[provider:{}] Received execute request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
-        FIND_PIPELINE(pipeline);
-        result = pipeline->execute(iteration);
+        FIND_PIPELINE(state);
+        auto pipeline = state->pipeline;
+        if(!state->active) {
+            result.value() = 0;
+            result.success() = false;
+            result.error() = "Pipeline is not active";
+        } else if(state->iteration != iteration) {
+            result.value() = 0;
+            result.success() = false;
+            result.error() = "Invalid iteration";
+        } else {
+            result = pipeline->execute(iteration);
+        }
         req.respond(result);
-        spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_name);
     }
 
     void cleanup(const tl::request& req,
@@ -352,10 +413,25 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                  uint64_t iteration) {
         spdlog::trace("[provider:{}] Received cleanup request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
-        FIND_PIPELINE(pipeline);
-        result = pipeline->cleanup(iteration);
+        FIND_PIPELINE(state);
+        auto pipeline = state->pipeline;
+        if(!state->active) {
+            result.value() = 0;
+            result.success() = false;
+            result.error() = "Pipeline is not active";
+        } else if(state->iteration != iteration) {
+            result.value() = 0;
+            result.success() = false;
+            result.error() = "Invalid iteration";
+        } else {
+            result = pipeline->cleanup(iteration);
+            if(result.success()) {
+                std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+                state->active = false;
+                m_num_active_pipelines -= 1;
+            }
+        }
         req.respond(result);
-        spdlog::trace("[provider:{}] Pipeline {} successfuly executed", id(), pipeline_name);
     }
 
     void getMonaAddress(const tl::request& req) {
@@ -448,8 +524,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         {
             std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
             for(auto& p : m_pipelines) {
-                auto& pipeline = p.second;
-                pipeline->updateMonaAddresses(m_mona, addresses);
+                auto& state = p.second;
+                state->pipeline->updateMonaAddresses(m_mona, addresses);
             }
         }
     }
