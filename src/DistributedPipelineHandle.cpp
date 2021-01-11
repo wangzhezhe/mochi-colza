@@ -51,6 +51,51 @@ void DistributedPipelineHandle::setHashFunction(const HashFunction& hash) {
     self->m_hash = hash;
 }
 
+void DistributedPipelineHandle::start(uint64_t iteration,
+             int32_t* result,
+             AsyncRequest* req) const {
+    if(not self) throw Exception("Invalid colza::DistributedPipelineHandle object");
+    self->m_comm->barrier();
+    if(self->m_pipelines.size() == 0)
+        return;
+    auto num_pipelines = self->m_pipelines.size();
+    int num_processes = self->m_comm->size();
+    int my_rank = self->m_comm->rank();
+    if(my_rank != 0) return;
+
+    auto& rpc = self->m_client->m_start;
+    std::vector<uint32_t> results(num_pipelines);
+    std::vector<tl::async_response> async_responses;
+
+    for(auto& pipeline : self->m_pipelines) {
+        auto async_response = rpc.on(pipeline.self->m_ph).async(pipeline.self->m_name, iteration);
+        async_responses.push_back(std::move(async_response));
+    }
+
+    auto async_request_impl =
+        std::make_shared<AsyncRequestImpl>(std::move(async_responses));
+
+    async_request_impl->m_wait_callback =
+            [result](AsyncRequestImpl& async_request_impl) {
+                    RequestResult<int32_t> response;
+                    for(auto& r : async_request_impl.m_async_responses) {
+                        RequestResult<int32_t> local_response = r.wait();
+                        if(!local_response.success())
+                            response = local_response;
+                    }
+                    async_request_impl.m_async_responses.clear();
+                    if(response.success()) {
+                        if(result) *result = response.value();
+                    } else {
+                        throw Exception(response.error());
+                    }
+            };
+    if(req)
+        *req = AsyncRequest(std::move(async_request_impl));
+    else
+        AsyncRequest(std::move(async_request_impl)).wait();
+}
+
 void DistributedPipelineHandle::stage(const std::string& dataset_name,
            uint64_t iteration,
            uint64_t block_id,

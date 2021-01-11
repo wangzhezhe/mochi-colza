@@ -82,6 +82,17 @@ class Backend {
         const std::vector<na_addr_t>& addresses) = 0;
 
     /**
+     * @brief Tells the pipeline that the given iteration is starting.
+     * This function should be called before stage/execute/cleanup can
+     * be called.
+     *
+     * @param iteration Iteration
+     *
+     * @return a RequestResult containing an error code.
+     */
+    virtual RequestResult<int32_t> start(uint64_t iteration) = 0;
+
+    /**
      * @brief Stage some data for a future execution of the pipeline.
      *
      * @param sender_addr Sender address
@@ -93,7 +104,7 @@ class Backend {
      * @param type Type of data
      * @param data Data
      *
-     * @return COLZA_SUCCESS or other error codes.
+     * @return a RequestResult containing an error code.
      */
     virtual RequestResult<int32_t> stage(
             const std::string& sender_addr,
@@ -110,7 +121,7 @@ class Backend {
      *
      * @param iteration Iteration
      *
-     * @return COLZA_SUCCESS or other error codes.
+     * @return a RequestResult containing an error code.
      */
     virtual RequestResult<int32_t> execute(
             uint64_t iteration) = 0;
@@ -120,7 +131,7 @@ class Backend {
      *
      * @param iteration Iteration number.
      *
-     * @return COLZA_SUCCESS or other error codes.
+     * @return a RequestResult containing an error code.
      */
     virtual RequestResult<int32_t> cleanup(
             uint64_t iteration) = 0;

@@ -33,6 +33,9 @@ int main(int argc, char** argv) {
         colza::PipelineHandle pipeline =
             client.makePipelineHandle(g_address, 0, g_pipeline);
 
+        // start iteration
+        pipeline.start(0);
+
         // create some data
         std::vector<double> mydata(32*54);
         for(unsigned i=0; i < 32; i++)

@@ -94,6 +94,17 @@ class DummyPipeline : public colza::Backend {
             const std::vector<na_addr_t>& addresses) override;
 
     /**
+     * @brief Tells the pipeline that the given iteration is starting.
+     * This function should be called before stage/execute/cleanup can
+     * be called.
+     *
+     * @param iteration Iteration
+     *
+     * @return a RequestResult containing an error code.
+     */
+    colza::RequestResult<int32_t> start(uint64_t iteration) override;
+
+    /**
      * @brief Stage some data.
      */
     colza::RequestResult<int32_t> stage(

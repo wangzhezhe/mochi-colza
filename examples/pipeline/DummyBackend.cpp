@@ -16,6 +16,14 @@ void DummyPipeline::updateMonaAddresses(
     (void)mona;
 }
 
+colza::RequestResult<int32_t> DummyPipeline::start(uint64_t iteration) {
+    std::cerr << "Iteration " << iteration << " starting" << std::endl;
+    colza::RequestResult<int32_t> result;
+    result.success() = true;
+    result.value() = 0;
+    return result;
+}
+
 colza::RequestResult<int32_t> DummyPipeline::execute(
         uint64_t iteration) {
     (void)iteration;

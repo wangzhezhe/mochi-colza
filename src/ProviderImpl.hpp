@@ -62,6 +62,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     tl::remote_procedure m_destroy_pipeline;
     // Client RPC
     tl::remote_procedure m_check_pipeline;
+    tl::remote_procedure m_start;
     tl::remote_procedure m_stage;
     tl::remote_procedure m_execute;
     tl::remote_procedure m_cleanup;
@@ -79,6 +80,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_create_pipeline(define("colza_create_pipeline", &ProviderImpl::createPipeline, pool))
     , m_destroy_pipeline(define("colza_destroy_pipeline", &ProviderImpl::destroyPipeline, pool))
     , m_check_pipeline(define("colza_check_pipeline", &ProviderImpl::checkPipeline, pool))
+    , m_start(define("colza_start", &ProviderImpl::start, pool))
     , m_stage(define("colza_stage", &ProviderImpl::stage, pool))
     , m_execute(define("colza_execute", &ProviderImpl::execute, pool))
     , m_cleanup(define("colza_cleanup", &ProviderImpl::cleanup, pool))
@@ -281,6 +283,18 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         result.success() = true;
         req.respond(result);
         spdlog::trace("[provider:{}] Code successfully executed on pipeline {}", id(), pipeline_name);
+    }
+
+    void start(const tl::request& req,
+               const std::string& pipeline_name,
+               uint64_t iteration) {
+        spdlog::trace("[provider:{}] Received start request for pipeline {}", id(), pipeline_name);
+        RequestResult<int32_t> result;
+        FIND_PIPELINE(pipeline);
+        result = pipeline->start(iteration);
+        req.respond(result);
+        spdlog::trace("[provider:{}] Pipeline {} successfuly started iteration {}",
+                      id(), pipeline_name, iteration);
     }
 
     void stage(const tl::request& req,

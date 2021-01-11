@@ -44,6 +44,9 @@ int main(int argc, char** argv) {
             client.makeDistributedPipelineHandle(
                 &comm, g_ssg_file, 0, g_pipeline);
 
+        // start iteration
+        pipeline.start(0);
+
         // create some data
         std::vector<double> mydata(32*54);
         for(unsigned i=0; i < 32; i++)
