@@ -49,16 +49,20 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
     public:
 
-    std::string          m_token;
-    ssg_group_id_t       m_gid;
-    uint64_t             m_group_hash = 0;
-    tl::pool             m_pool;
+    // security
+    std::string            m_token;
+    // SSG
+    tl::mutex              m_ssg_mtx;
+    tl::condition_variable m_ssg_cv;
+    ssg_group_id_t         m_gid;
+    uint64_t               m_group_hash = 0;
+    tl::pool               m_pool;
     // Mona
     tl::mutex              m_mona_mtx;
     tl::condition_variable m_mona_cv;
     mona_instance_t        m_mona;
     std::string            m_mona_self_addr;
-    std::vector<na_addr_t> m_mona_addresses;
+    std::map<ssg_member_id_t, na_addr_t> m_mona_addresses;
     // Admin RPC
     tl::remote_procedure m_create_pipeline;
     tl::remote_procedure m_destroy_pipeline;
@@ -118,8 +122,12 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         m_execute.deregister();
         m_cleanup.deregister();
         m_pipelines.clear();
-        for(auto& addr : m_mona_addresses) {
-            mona_addr_free(m_mona, addr);
+        {
+            std::lock_guard<tl::mutex> lock(m_mona_mtx);
+            for(auto& p : m_mona_addresses) {
+                mona_addr_free(m_mona, p.second);
+            }
+            m_mona_addresses.clear();
         }
         spdlog::trace("[provider:{}]    => done!", id());
     }
@@ -158,7 +166,6 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                          const std::string& type,
                          const json& config,
                          const std::string& library) {
-        spdlog::trace("AAAA");
         if(!library.empty()) {
             void* handle = dlopen(library.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
             if(!handle) {
@@ -166,7 +173,6 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             }
         }
 
-        spdlog::trace("BBBB");
         std::unique_ptr<Backend> pipeline;
         try {
             PipelineFactoryArgs args;
@@ -187,7 +193,14 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             throw Exception("Unknown pipeline type "s + type);
         }
 
-        pipeline->updateMonaAddresses(m_mona, m_mona_addresses);
+        std::vector<na_addr_t> addresses;
+        {
+            std::lock_guard<tl::mutex> lock(m_mona_mtx);
+            addresses.reserve(m_mona_addresses.size());
+            for(const auto& p : m_mona_addresses)
+                addresses.push_back(p.second);
+        }
+        pipeline->updateMonaAddresses(m_mona, addresses);
 
         {
             std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
@@ -388,18 +401,23 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         auto self_id = ssg_get_self_id(get_engine().get_margo_instance());
         auto self_rank = ssg_get_group_member_rank(m_gid, self_id);
         auto group_size = ssg_get_group_size(m_gid);
-        m_mona_addresses.resize(group_size);
+        decltype(m_mona_addresses) addresses;
         for(int i = 0; i < group_size; i++) {
             int j = (self_rank + i) % group_size;
+            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(m_gid, j);
             if(i == 0) {
                 na_addr_t self_mona_addr;
                 mona_addr_self(m_mona, &self_mona_addr);
-                m_mona_addresses[j] = self_mona_addr;
+                addresses[member_id] = self_mona_addr;
             } else {
-                ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(m_gid, j);
-                m_mona_addresses[j] = _requestMonaAddressFromSSGMember(member_id);
+                addresses[member_id] = _requestMonaAddressFromSSGMember(member_id);
             }
         }
+        {
+            std::lock_guard<tl::mutex> lock(m_mona_mtx);
+            m_mona_addresses = addresses;
+        }
+        m_mona_cv.notify_all();
         spdlog::trace("[provider:{}] Done resolving MoNA addressed of SSG group", id());
         spdlog::trace("[provider:{}] {} addresses found in SSG group", id(), group_size);
     }
@@ -407,7 +425,33 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     void _membershipUpdate(ssg_member_id_t member_id,
                            ssg_member_update_type_t update_type) {
         m_group_hash = UpdateGroupHash(m_group_hash, member_id);
-        (void)update_type;
+        if(update_type == SSG_MEMBER_JOINED) {
+            na_addr_t na_addr = _requestMonaAddressFromSSGMember(member_id);
+            {
+                std::lock_guard<tl::mutex> lock(m_mona_mtx);
+                m_mona_addresses[member_id] = na_addr;
+            }
+            m_mona_cv.notify_all();
+        } else {
+            {
+                std::lock_guard<tl::mutex> lock(m_mona_mtx);
+                m_mona_addresses.erase(member_id);
+            }
+        }
+        std::vector<na_addr_t> addresses;
+        {
+            std::lock_guard<tl::mutex> lock(m_mona_mtx);
+            addresses.reserve(m_mona_addresses.size());
+            for(const auto& p : m_mona_addresses)
+                addresses.push_back(p.second);
+        }
+        {
+            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+            for(auto& p : m_pipelines) {
+                auto& pipeline = p.second;
+                pipeline->updateMonaAddresses(m_mona, addresses);
+            }
+        }
     }
 
     static void membershipUpdate(void* p, ssg_member_id_t member_id,
