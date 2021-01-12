@@ -25,6 +25,7 @@ class ClientImpl {
     tl::remote_procedure m_stage;
     tl::remote_procedure m_execute;
     tl::remote_procedure m_cleanup;
+    tl::remote_procedure m_abort;
 
     ClientImpl(const tl::engine& engine)
     : m_engine(engine)
@@ -33,6 +34,7 @@ class ClientImpl {
     , m_stage(m_engine.define("colza_stage"))
     , m_execute(m_engine.define("colza_execute"))
     , m_cleanup(m_engine.define("colza_cleanup"))
+    , m_abort(m_engine.define("colza_abort").disable_response())
     {}
 
     ClientImpl(margo_instance_id mid)

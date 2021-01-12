@@ -98,12 +98,8 @@ class DistributedPipelineHandle {
      * @brief Start the pipeline on a given iteration.
      *
      * @param iteration Iteration to start.
-     * @param result Result.
-     * @param req Asynchronous request.
      */
-    void start(uint64_t iteration,
-               int32_t* result = nullptr,
-               AsyncRequest* req = nullptr) const;
+    void start(uint64_t iteration) const;
 
     /**
      * @brief Stage some data into the pipeline using a bulk handle.

@@ -34,7 +34,6 @@ Admin::Admin(const Admin& other) = default;
 
 Admin& Admin::operator=(const Admin& other) = default;
 
-
 Admin::~Admin() = default;
 
 Admin::operator bool() const {
@@ -50,10 +49,10 @@ void Admin::createPipeline(const std::string& address,
                            const std::string& token) const {
     auto endpoint  = self->m_engine.lookup(address);
     auto ph        = tl::provider_handle(endpoint, provider_id);
-    RequestResult<bool> result = self->m_create_pipeline.on(ph)(
+    RequestResult<int32_t> result = self->m_create_pipeline.on(ph)(
             token, pipeline_name, pipeline_type, pipeline_config, library);
     if(not result.success()) {
-        throw Exception(result.error());
+        throw Exception((ErrorCode)result.value(), result.error());
     }
 }
 
@@ -63,9 +62,9 @@ void Admin::destroyPipeline(const std::string& address,
                             const std::string& token) const {
     auto endpoint  = self->m_engine.lookup(address);
     auto ph        = tl::provider_handle(endpoint, provider_id);
-    RequestResult<bool> result = self->m_destroy_pipeline.on(ph)(token, pipeline_name);
+    RequestResult<int32_t> result = self->m_destroy_pipeline.on(ph)(token, pipeline_name);
     if(not result.success()) {
-        throw Exception(result.error());
+        throw Exception((ErrorCode)result.value(), result.error());
     }
 }
 
@@ -80,11 +79,11 @@ void Admin::createDistributedPipeline(const std::string& ssg_file,
     int num_addrs = -1;
     int ret = ssg_group_id_load(ssg_file.c_str(), &num_addrs, &gid);
     if(ret != SSG_SUCCESS)
-        throw Exception("Could not open SSG file "s + ssg_file);
+        throw Exception(ErrorCode::SSG_ERROR, "Could not open SSG file "s + ssg_file);
 
     ret = ssg_group_observe(self->m_engine.get_margo_instance(), gid);
     if(ret != SSG_SUCCESS)
-        throw Exception("Could not observe SSG group from "s + ssg_file);
+        throw Exception(ErrorCode::SSG_ERROR, "Could not observe SSG group from "s + ssg_file);
 
     std::vector<std::string> addresses;
     int group_size = ssg_get_group_size(gid);
@@ -118,11 +117,13 @@ void Admin::destroyDistributedPipeline(const std::string& ssg_file,
     int num_addrs = -1;
     int ret = ssg_group_id_load(ssg_file.c_str(), &num_addrs, &gid);
     if(ret != SSG_SUCCESS)
-        throw Exception("Could not open SSG file "s + ssg_file);
+        throw Exception(ErrorCode::SSG_ERROR,
+            "Could not open SSG file "s + ssg_file);
 
     ret = ssg_group_observe(self->m_engine.get_margo_instance(), gid);
     if(ret != SSG_SUCCESS)
-        throw Exception("Could not observe SSG group from "s + ssg_file);
+        throw Exception(ErrorCode::SSG_ERROR,
+            "Could not observe SSG group from "s + ssg_file);
 
     std::vector<std::string> addresses;
     int group_size = ssg_get_group_size(gid);

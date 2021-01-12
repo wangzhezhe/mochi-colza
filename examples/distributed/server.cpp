@@ -19,6 +19,8 @@ static int         g_num_threads = 0;
 static std::string g_log_level   = "info";
 static std::string g_ssg_file    = "";
 static std::string g_config_file = "";
+static bool        g_join        = false;
+
 
 static void parse_command_line(int argc, char** argv);
 
@@ -35,22 +37,41 @@ int main(int argc, char** argv) {
     int ret = ssg_init();
     if(ret != SSG_SUCCESS) {
         std::cerr << "Could not initialize SSG" << std::endl;
+        exit(-1);
     }
 
     tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, g_num_threads);
     engine.enable_remote_shutdown();
 
-    // Create SSG group using MPI
-    ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
-    ssg_group_id_t gid = ssg_group_create_mpi(engine.get_margo_instance(),
-                                          "mygroup",
-                                          MPI_COMM_WORLD,
-                                          &group_config,
-                                          nullptr, nullptr);
+    ssg_group_id_t gid;
+    if(!g_join) {
+        // Create SSG group using MPI
+        ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
+        group_config.swim_period_length_ms = 1000;
+        group_config.swim_suspect_timeout_periods = 3;
+        group_config.swim_subgroup_member_count = 1;
+        gid = ssg_group_create_mpi(engine.get_margo_instance(),
+                                   "mygroup",
+                                   MPI_COMM_WORLD,
+                                   &group_config,
+                                   nullptr, nullptr);
+    } else {
+        int num_addrs = SSG_ALL_MEMBERS;
+        ret = ssg_group_id_load(g_ssg_file.c_str(), &num_addrs, &gid);
+        if(ret != SSG_SUCCESS) {
+            std::cerr << "Could not load group id from file" << std::endl;
+            exit(-1);
+        }
+        ret = ssg_group_join(engine.get_margo_instance(), gid, nullptr, nullptr);
+        if(ret != SSG_SUCCESS) {
+            std::cerr << "Could not join SSG group" << std::endl;
+            exit(-1);
+        }
+    }
     engine.push_prefinalize_callback([](){ ssg_finalize(); });
 
     // Write SSG file
-    if(rank == 0 && !g_ssg_file.empty()) {
+    if(rank == 0 && !g_ssg_file.empty() && !g_join) {
         int ret = ssg_group_id_store(g_ssg_file.c_str(), gid, SSG_ALL_MEMBERS);
         if(ret != SSG_SUCCESS) {
             spdlog::critical("Could not store SSG file {}", g_ssg_file);
@@ -99,17 +120,20 @@ void parse_command_line(int argc, char** argv) {
                 "Log level (trace, debug, info, warning, error, critical, off)", false, "info", "string");
         TCLAP::ValueArg<std::string> ssgFile("s", "ssg-file", "SSG file name", false, "", "string");
         TCLAP::ValueArg<std::string> configFile("c", "config", "config file name", false, "", "string");
+        TCLAP::SwitchArg joinGroup("j","join","Join an existing group rather than create it", false);
         cmd.add(addressArg);
         cmd.add(numThreads);
         cmd.add(logLevel);
         cmd.add(ssgFile);
         cmd.add(configFile);
+        cmd.add(joinGroup);
         cmd.parse(argc, argv);
         g_address     = addressArg.getValue();
         g_num_threads = numThreads.getValue();
         g_log_level   = logLevel.getValue();
         g_ssg_file    = ssgFile.getValue();
         g_config_file = configFile.getValue();
+        g_join        = joinGroup.getValue();
     } catch(TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);

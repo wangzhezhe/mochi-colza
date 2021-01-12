@@ -40,36 +40,17 @@ Client PipelineHandle::client() const {
     return Client(self->m_client);
 }
 
-void PipelineHandle::start(uint64_t iteration,
-             int32_t* result,
-             AsyncRequest* req) const {
-    if(not self) throw Exception("Invalid colza::PipelineHandle object");
-    auto& rpc = self->m_client->m_start;
-    auto& ph  = self->m_ph;
+void PipelineHandle::start(uint64_t iteration) const {
+    if(not self)
+        throw Exception(ErrorCode::INVALID_INSTANCE,
+            "Invalid colza::PipelineHandle object");
+    auto& start         = self->m_client->m_start;
+    auto& ph            = self->m_ph;
     auto& pipeline_name = self->m_name;
-    if(req == nullptr) { // synchronous call
-        RequestResult<int32_t> response = rpc.on(ph)(pipeline_name, iteration);
-        if(response.success()) {
-            if(result) *result = response.value();
-        } else {
-            throw Exception(response.error());
-        }
-    } else { // asynchronous call
-        auto async_response = rpc.on(ph).async(pipeline_name, iteration);
-        auto async_request_impl =
-            std::make_shared<AsyncRequestImpl>(std::move(async_response));
-        async_request_impl->m_wait_callback =
-            [result](AsyncRequestImpl& async_request_impl) {
-                RequestResult<int32_t> response =
-                    async_request_impl.m_async_responses[0].wait();
-                    async_request_impl.m_async_responses.clear();
-                    if(response.success()) {
-                        if(result) *result = response.value();
-                    } else {
-                        throw Exception(response.error());
-                    }
-            };
-        *req = AsyncRequest(std::move(async_request_impl));
+    const uint64_t group_hash = 0;
+    RequestResult<int32_t> response = start.on(ph)(group_hash, pipeline_name, iteration);
+    if(!response.success()) {
+        throw Exception((ErrorCode)response.value(), response.error());
     }
 }
 
@@ -83,7 +64,9 @@ void PipelineHandle::stage(const std::string& dataset_name,
            const std::string& origin_addr,
            int32_t* result,
            AsyncRequest* req) const {
-    if(not self) throw Exception("Invalid colza::PipelineHandle object");
+    if(not self)
+        throw Exception(ErrorCode::INVALID_INSTANCE,
+             "Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_stage;
     auto& ph  = self->m_ph;
     auto& pipeline_name = self->m_name;
@@ -104,7 +87,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
         if(response.success()) {
             if(result) *result = response.value();
         } else {
-            throw Exception(response.error());
+            throw Exception((ErrorCode)response.value(), response.error());
         }
     } else { // asynchronous call
         auto async_response = rpc.on(ph).async(
@@ -127,7 +110,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
                     if(response.success()) {
                         if(result) *result = response.value();
                     } else {
-                        throw Exception(response.error());
+                        throw Exception((ErrorCode)response.value(), response.error());
                     }
             };
         *req = AsyncRequest(std::move(async_request_impl));
@@ -143,7 +126,9 @@ void PipelineHandle::stage(const std::string& dataset_name,
            const void* data,
            int32_t* result,
            AsyncRequest* req) const {
-    if(not self) throw Exception("Invalid colza::PipelineHandle object");
+    if(not self)
+        throw Exception(ErrorCode::INVALID_INSTANCE,
+            "Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_stage;
     auto& ph  = self->m_ph;
     auto& pipeline_name = self->m_name;
@@ -166,7 +151,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
         if(response.success()) {
             if(result) *result = response.value();
         } else {
-            throw Exception(response.error());
+            throw Exception((ErrorCode)response.value(), response.error());
         }
     } else { // asynchronous call
         auto async_response = rpc.on(ph).async(
@@ -189,7 +174,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
                     if(response.success()) {
                         if(result) *result = response.value();
                     } else {
-                        throw Exception(response.error());
+                        throw Exception((ErrorCode)response.value(), response.error());
                     }
             };
         *req = AsyncRequest(std::move(async_request_impl));
@@ -199,7 +184,9 @@ void PipelineHandle::stage(const std::string& dataset_name,
 void PipelineHandle::execute(uint64_t iteration,
              int32_t* result,
              AsyncRequest* req) const {
-    if(not self) throw Exception("Invalid colza::PipelineHandle object");
+    if(not self)
+        throw Exception(ErrorCode::INVALID_INSTANCE,
+            "Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_execute;
     auto& ph  = self->m_ph;
     auto& pipeline_name = self->m_name;
@@ -208,7 +195,7 @@ void PipelineHandle::execute(uint64_t iteration,
         if(response.success()) {
             if(result) *result = response.value();
         } else {
-            throw Exception(response.error());
+            throw Exception((ErrorCode)response.value(), response.error());
         }
     } else { // asynchronous call
         auto async_response = rpc.on(ph).async(pipeline_name, iteration);
@@ -222,7 +209,7 @@ void PipelineHandle::execute(uint64_t iteration,
                     if(response.success()) {
                         if(result) *result = response.value();
                     } else {
-                        throw Exception(response.error());
+                        throw Exception((ErrorCode)response.value(), response.error());
                     }
             };
         *req = AsyncRequest(std::move(async_request_impl));
@@ -232,7 +219,9 @@ void PipelineHandle::execute(uint64_t iteration,
 void PipelineHandle::cleanup(uint64_t iteration,
              int32_t* result,
              AsyncRequest* req) const {
-    if(not self) throw Exception("Invalid colza::PipelineHandle object");
+    if(not self)
+        throw Exception(ErrorCode::INVALID_INSTANCE,
+            "Invalid colza::PipelineHandle object");
     auto& rpc = self->m_client->m_cleanup;
     auto& ph  = self->m_ph;
     auto& pipeline_name = self->m_name;
@@ -241,7 +230,7 @@ void PipelineHandle::cleanup(uint64_t iteration,
         if(response.success()) {
             if(result) *result = response.value();
         } else {
-            throw Exception(response.error());
+            throw Exception((ErrorCode)response.value(), response.error());
         }
     } else { // asynchronous call
         auto async_response = rpc.on(ph).async(pipeline_name, iteration);
@@ -255,7 +244,7 @@ void PipelineHandle::cleanup(uint64_t iteration,
                     if(response.success()) {
                         if(result) *result = response.value();
                     } else {
-                        throw Exception(response.error());
+                        throw Exception((ErrorCode)response.value(), response.error());
                     }
             };
         *req = AsyncRequest(std::move(async_request_impl));

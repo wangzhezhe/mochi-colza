@@ -79,12 +79,8 @@ class PipelineHandle {
      * @brief Tell the pipeline that an iterarion is starting.
      *
      * @param iteration Iteration number
-     * @param result Result sent by the pipeline
-     * @param req Asynchronous request
      */
-    void start(uint64_t iteration,
-               int32_t* result = nullptr,
-               AsyncRequest* req = nullptr) const;
+    void start(uint64_t iteration) const;
 
     /**
      * @brief Stage some data into the pipeline using a bulk handle.

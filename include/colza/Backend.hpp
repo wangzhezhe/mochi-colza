@@ -93,6 +93,15 @@ class Backend {
     virtual RequestResult<int32_t> start(uint64_t iteration) = 0;
 
     /**
+     * @brief Tells the pipeline that the given iteration is aborted.
+     * This function is used automatically when there is a mismatch
+     * between the client's view of the group and the group itself.
+     *
+     * @param iteration Iteration
+     */
+    virtual void abort(uint64_t iteration) = 0;
+
+    /**
      * @brief Stage some data for a future execution of the pipeline.
      *
      * @param sender_addr Sender address
@@ -139,10 +148,10 @@ class Backend {
     /**
      * @brief Destroys the underlying pipeline.
      *
-     * @return a RequestResult<bool> instance indicating
+     * @return a RequestResult<int32_t> instance indicating
      * whether the database was successfully destroyed.
      */
-    virtual RequestResult<bool> destroy() = 0;
+    virtual RequestResult<int32_t> destroy() = 0;
 
 };
 

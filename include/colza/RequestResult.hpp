@@ -37,6 +37,12 @@ class RequestResult {
     RequestResult& operator=(RequestResult&&) = default;
     RequestResult& operator=(const RequestResult&) = default;
 
+    template<typename U>
+    RequestResult(const RequestResult<U>& other)
+    : m_success(other.success())
+    , m_error(other.error())
+    , m_value(static_cast<T>(other.value())) {}
+
     /**
      * @brief Whether the request succeeded.
      */
@@ -97,53 +103,6 @@ class RequestResult {
     bool        m_success = true;
     std::string m_error   = "";
     T           m_value;
-};
-
-template<>
-class RequestResult<std::string> {
-
-    public:
-
-    RequestResult() = default;
-    RequestResult(RequestResult&&) = default;
-    RequestResult(const RequestResult&) = default;
-    RequestResult& operator=(RequestResult&&) = default;
-    RequestResult& operator=(const RequestResult&) = default;
-
-    bool& success() {
-        return m_success;
-    }
-
-    const bool& success() const {
-        return m_success;
-    }
-
-    std::string& error() {
-        return m_content;
-    }
-
-    const std::string& error() const {
-        return m_content;
-    }
-
-    std::string& value() {
-        return m_content;
-    }
-
-    const std::string& value() const {
-        return m_content;
-    }
-
-    template<typename Archive>
-    void serialize(Archive& a) {
-        a & m_success;
-        a & m_content;
-    }
-
-    private:
-
-    bool        m_success = true;
-    std::string m_content = "";
 };
 
 }

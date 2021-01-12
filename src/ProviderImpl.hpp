@@ -8,6 +8,7 @@
 
 #include "colza/Backend.hpp"
 #include "colza/Exception.hpp"
+#include "colza/ErrorCodes.hpp"
 #include "SSGUtil.hpp"
 
 #include <thallium.hpp>
@@ -29,6 +30,7 @@
             if(it == m_pipelines.end()) {\
                 result.success() = false;\
                 result.error() = "Pipeline with name "s + pipeline_name + " not found";\
+                result.value() = (int)ErrorCode::INVALID_PIPELINE_NAME;\
                 req.respond(result);\
                 spdlog::error("[provider:{}] Pipeline {} not found", id(), pipeline_name);\
                 return;\
@@ -78,6 +80,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     tl::remote_procedure m_stage;
     tl::remote_procedure m_execute;
     tl::remote_procedure m_cleanup;
+    tl::remote_procedure m_abort;
     // Other RPCs
     tl::remote_procedure m_get_mona_addr;
     // Pipelines
@@ -97,6 +100,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_stage(define("colza_stage", &ProviderImpl::stage, pool))
     , m_execute(define("colza_execute", &ProviderImpl::execute, pool))
     , m_cleanup(define("colza_cleanup", &ProviderImpl::cleanup, pool))
+    , m_abort(define("colza_abort", &ProviderImpl::abort, pool).disable_response())
     , m_get_mona_addr(define("colza_get_mona_addr", &ProviderImpl::getMonaAddress, pool))
     {
         m_group_hash = ComputeGroupHash(m_gid);
@@ -105,13 +109,15 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             na_addr_t my_mona_addr;
             na_return_t ret = mona_addr_self(m_mona, &my_mona_addr);
             if(ret != NA_SUCCESS)
-                throw Exception("Could not get address from MoNA");
+                throw Exception(ErrorCode::MONA_ERROR,
+                    "Could not get address from MoNA");
             char buf[256];
             na_size_t buf_size = 256;
             ret = mona_addr_to_string(m_mona, buf, &buf_size, my_mona_addr);
             mona_addr_free(m_mona, my_mona_addr);
             if(ret != NA_SUCCESS) {
-                throw Exception("Could not serialize MoNA address");
+                throw Exception(ErrorCode::MONA_ERROR,
+                    "Could not serialize MoNA address");
             }
             m_mona_self_addr = buf;
         }
@@ -128,6 +134,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         m_stage.deregister();
         m_execute.deregister();
         m_cleanup.deregister();
+        m_abort.deregister();
         m_pipelines.clear();
         {
             std::lock_guard<tl::mutex> lock(m_mona_mtx);
@@ -145,25 +152,29 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         try {
             json_config = json::parse(config);
         } catch(...) {
-            throw Exception("Could not parse JSON configuration");
+            throw Exception(ErrorCode::JSON_PARSE_ERROR,
+                "Could not parse JSON configuration");
         }
         auto it = json_config.find("pipelines");
         if(it == json_config.end()) return;
         auto pipelines = *it;
         if(!pipelines.is_object()) {
-            throw Exception("'pipeline' entry should be an object");
+            throw Exception(ErrorCode::JSON_CONFIG_ERROR,
+                "'pipeline' entry should be an object");
         }
         for(auto& p : pipelines.items()) {
             std::string name = p.key();
             auto& pipeline = p.value();
             if(!pipeline.is_object()) {
-                throw Exception("Pipeline '"s + name + "' should be an object");
+                throw Exception(ErrorCode::JSON_CONFIG_ERROR,
+                    "Pipeline '"s + name + "' should be an object");
             }
             std::string library = pipeline.value("library", std::string());
             json config = pipeline.value("config", json::object());
             std::string type = pipeline.value("type", std::string());
             if(type.empty()) {
-                throw Exception("No type provided for pipeline '"s + name + "'");
+                throw Exception(ErrorCode::JSON_CONFIG_ERROR,
+                    "No type provided for pipeline '"s + name + "'");
             }
             _createPipeline(name, type, config, library);
         }
@@ -176,7 +187,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         if(!library.empty()) {
             void* handle = dlopen(library.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
             if(!handle) {
-                throw Exception(dlerror());
+                throw Exception(ErrorCode::INVALID_LIBRARY, dlerror());
             }
         }
 
@@ -187,17 +198,23 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             args.config = config;
             args.gid = m_gid;
             pipeline = PipelineFactory::createPipeline(type, args);
+        } catch(const Exception& ex) {
+            spdlog::error("[provider:{}] Error when creating pipeline {} of type {}:",
+                    id(), name, type);
+            spdlog::error("[provider:{}]    => {}", id(), ex.what());
+            throw Exception(ex.code(), ex.what());
         } catch(const std::exception& ex) {
             spdlog::error("[provider:{}] Error when creating pipeline {} of type {}:",
                     id(), name, type);
             spdlog::error("[provider:{}]    => {}", id(), ex.what());
-            throw Exception(ex.what());
+            throw Exception(ErrorCode::OTHER_ERROR, ex.what());
         }
 
         if(not pipeline) {
             spdlog::error("[provider:{}] Unknown pipeline type {} for pipeline {}",
                     id(), type, name);
-            throw Exception("Unknown pipeline type "s + type);
+            throw Exception(ErrorCode::PIPELINE_CREATE_ERROR,
+                "Unknown pipeline type "s + type);
         }
 
         std::vector<na_addr_t> addresses;
@@ -235,11 +252,12 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             spdlog::trace("[provider:{}]    => library = {}", id(), library);
         }
 
-        RequestResult<bool> result;
+        RequestResult<int32_t> result;
 
         if(m_token.size() > 0 && m_token != token) {
             result.success() = false;
             result.error() = "Invalid security token";
+            result.value() = (int)ErrorCode::INVALID_SECURITY_TOKEN;
             req.respond(result);
             spdlog::error("[provider:{}] Invalid security token {}", id(), token);
             return;
@@ -252,6 +270,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             }
         } catch(json::parse_error& e) {
             result.error() = e.what();
+            result.value() = (int)ErrorCode::JSON_PARSE_ERROR;
             result.success() = false;
             spdlog::error("[provider:{}] Could not parse pipeline configuration for pipeline {}",
                     id(), pipeline_name);
@@ -262,8 +281,9 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         try {
             _createPipeline(pipeline_name, pipeline_type, json_config, library);
         } catch(Exception& e) {
-            result.error() = e.what();
+            result.error()   = e.what();
             result.success() = false;
+            result.value()   = (int)e.code();
             req.respond(result);
             return;
         }
@@ -274,12 +294,13 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     void destroyPipeline(const tl::request& req,
                          const std::string& token,
                          const std::string& pipeline_name) {
-        RequestResult<bool> result;
+        RequestResult<int32_t> result;
         spdlog::trace("[provider:{}] Received destroyPipeline request for pipeline {}", id(), pipeline_name);
 
         if(m_token.size() > 0 && m_token != token) {
             result.success() = false;
             result.error() = "Invalid security token";
+            result.value() = (int)ErrorCode::INVALID_SECURITY_TOKEN;
             req.respond(result);
             spdlog::error("[provider:{}] Invalid security token {}", id(), token);
             return;
@@ -291,6 +312,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             if(m_pipelines.count(pipeline_name) == 0) {
                 result.success() = false;
                 result.error() = "Pipeline "s + pipeline_name + " not found";
+                result.value() = (int)ErrorCode::INVALID_PIPELINE_NAME;
                 req.respond(result);
                 spdlog::error("[provider:{}] Pipeline {} not found", id(), pipeline_name);
                 return;
@@ -300,6 +322,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             if(state->active) {
                 result.success() = false;
                 result.error() = "Cannot destroy a pipeline while active";
+                result.value() = (int)ErrorCode::PIPELINE_IS_ACTIVE;
                 req.respond(result);
                 spdlog::error("[provider:{}] Pipeline {} could not be destroyed "
                               "because it is active", id(), pipeline_name);
@@ -317,7 +340,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     void checkPipeline(const tl::request& req,
                        const std::string& pipeline_name) {
         spdlog::trace("[provider:{}] Received checkPipeline request for pipeline {}", id(), pipeline_name);
-        RequestResult<bool> result;
+        RequestResult<int32_t> result;
         FIND_PIPELINE(state);
         result.success() = true;
         req.respond(result);
@@ -325,6 +348,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     }
 
     void start(const tl::request& req,
+               uint64_t group_hash,
                const std::string& pipeline_name,
                uint64_t iteration) {
         spdlog::trace("[provider:{}] Received start request for pipeline {}", id(), pipeline_name);
@@ -332,11 +356,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         FIND_PIPELINE(state);
         auto pipeline = state->pipeline;
         if(state->active) {
-            result.value() = 0;
+            result.value() = (int)ErrorCode::PIPELINE_IS_ACTIVE;
             result.success() = false;
             result.error() = "Pipeline is already active";
         } else if(state->iteration != 0 && state->iteration >= iteration) {
-            result.value() = 0;
+            result.value() = (int)ErrorCode::INVALID_ITERATION;
             result.success() = false;
             result.error() = "Pipeline cannot be started at an inferior iteration number";
         } else {
@@ -372,11 +396,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         FIND_PIPELINE(state);
         auto pipeline = state->pipeline;
         if(!state->active) {
-            result.value() = 0;
+            result.value() = (int)ErrorCode::PIPELINE_NOT_ACTIVE;
             result.success() = false;
             result.error() = "Pipeline is not active";
         } else if(state->iteration != iteration) {
-            result.value() = 0;
+            result.value() = (int)ErrorCode::INVALID_ITERATION;
             result.success() = false;
             result.error() = "Invalid iteration";
         } else {
@@ -395,11 +419,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         FIND_PIPELINE(state);
         auto pipeline = state->pipeline;
         if(!state->active) {
-            result.value() = 0;
+            result.value() = (int)ErrorCode::PIPELINE_NOT_ACTIVE;
             result.success() = false;
             result.error() = "Pipeline is not active";
         } else if(state->iteration != iteration) {
-            result.value() = 0;
+            result.value() = (int)ErrorCode::INVALID_ITERATION;
             result.success() = false;
             result.error() = "Invalid iteration";
         } else {
@@ -416,11 +440,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         FIND_PIPELINE(state);
         auto pipeline = state->pipeline;
         if(!state->active) {
-            result.value() = 0;
+            result.value() = (int)ErrorCode::PIPELINE_NOT_ACTIVE;
             result.success() = false;
             result.error() = "Pipeline is not active";
         } else if(state->iteration != iteration) {
-            result.value() = 0;
+            result.value() = (int)ErrorCode::INVALID_ITERATION;
             result.success() = false;
             result.error() = "Invalid iteration";
         } else {
@@ -432,6 +456,28 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             }
         }
         req.respond(result);
+    }
+
+    void abort(const std::string& pipeline_name,
+               uint64_t iteration) {
+        spdlog::trace("[provider:{}] Received abort request for pipeline {}", id(), pipeline_name);
+        RequestResult<int32_t> result;
+        std::shared_ptr<PipelineState> state;
+        {
+            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+            auto it = m_pipelines.find(pipeline_name);
+            if(it == m_pipelines.end()) {
+                spdlog::error("[provider:{}] Pipeline {} not found", id(), pipeline_name);
+                return;
+            }
+            state = it->second;
+        }
+        auto pipeline = state->pipeline;
+        if(!state->active || state->iteration != iteration) {
+            return;
+        } else {
+            pipeline->abort(iteration);
+        }
     }
 
     void getMonaAddress(const tl::request& req) {
@@ -466,7 +512,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         na_addr_t addr = NA_ADDR_NULL;
         na_return_t ret = mona_addr_lookup(m_mona, result.value().c_str(), &addr);
         if(ret != NA_SUCCESS)
-            throw Exception("mona_addr_lookup failed with error code "s + std::to_string(ret));
+            throw Exception(ErrorCode::MONA_ERROR,
+                "mona_addr_lookup failed with error code "s + std::to_string(ret));
         return addr;
     }
 
@@ -500,8 +547,13 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
     void _membershipUpdate(ssg_member_id_t member_id,
                            ssg_member_update_type_t update_type) {
+        spdlog::trace("[provider:{}] Member {} updated", id(), member_id);
         m_group_hash = UpdateGroupHash(m_group_hash, member_id);
+        // TODO use the provider's pool instead of self ES
+        tl::xstream::self().make_thread([this, member_id, update_type]() {
+
         if(update_type == SSG_MEMBER_JOINED) {
+            spdlog::trace("[provider:{}] Member {} joined", id(), member_id);
             na_addr_t na_addr = _requestMonaAddressFromSSGMember(member_id);
             {
                 std::lock_guard<tl::mutex> lock(m_mona_mtx);
@@ -509,6 +561,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             }
             m_mona_cv.notify_all();
         } else {
+            spdlog::trace("[provider:{}] Member {} left", id(), member_id);
             {
                 std::lock_guard<tl::mutex> lock(m_mona_mtx);
                 m_mona_addresses.erase(member_id);
@@ -528,6 +581,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                 state->pipeline->updateMonaAddresses(m_mona, addresses);
             }
         }
+
+        }, tl::anonymous());
     }
 
     static void membershipUpdate(void* p, ssg_member_id_t member_id,

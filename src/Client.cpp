@@ -59,7 +59,7 @@ PipelineHandle Client::makePipelineHandle(
         bool check) const {
     auto endpoint  = self->m_engine.lookup(address);
     auto ph        = tl::provider_handle(endpoint, provider_id);
-    RequestResult<bool> result;
+    RequestResult<int32_t> result;
     result.success() = true;
     if(check) {
         result = self->m_check_pipeline.on(ph)(pipeline_name);
@@ -68,7 +68,7 @@ PipelineHandle Client::makePipelineHandle(
         auto pipeline_impl = std::make_shared<PipelineHandleImpl>(self, std::move(ph), pipeline_name);
         return PipelineHandle(pipeline_impl);
     } else {
-        throw Exception(result.error());
+        throw Exception((ErrorCode)result.value(), result.error());
         return PipelineHandle(nullptr);
     }
 }
@@ -89,11 +89,13 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
         int num_addrs = SSG_ALL_MEMBERS;
         int ret = ssg_group_id_load(ssg_group_file.c_str(), &num_addrs, &gid);
         if(ret != SSG_SUCCESS)
-            throw Exception("Could not open SSG group file "s + ssg_group_file);
+            throw Exception(ErrorCode::SSG_ERROR,
+                "Could not open SSG group file "s + ssg_group_file);
         auto mid = self->m_engine.get_margo_instance();
         ret = ssg_group_observe(mid, gid);
         if(ret != SSG_SUCCESS)
-            throw Exception("Could not observe the SSG group from file "s + ssg_group_file);
+            throw Exception(ErrorCode::SSG_ERROR,
+                "Could not observe the SSG group from file "s + ssg_group_file);
         // get string addresses
         int group_size = ssg_get_group_size(gid);
         std::vector<char> packed_addresses(group_size*256, 0);
@@ -121,7 +123,8 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
         int group_size;
         comm->bcast(&group_size, sizeof(group_size), 0);
         if(group_size == -1) {
-            throw Exception("Master client could not resolve pipeline");
+            throw Exception(ErrorCode::SSG_ERROR,
+                "Master client could not resolve pipeline");
         }
         // get addresses from rank 0
         std::vector<char> packed_addresses(group_size*256);
