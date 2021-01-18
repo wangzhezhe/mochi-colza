@@ -371,9 +371,10 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             result = pipeline->start(iteration);
             spdlog::trace("[provider:{}] Pipeline {} successfuly started iteration {}",
                           id(), pipeline_name, iteration);
-            if(result.success())
+            if(result.success()) {
                 state->iteration = iteration;
-            else {
+                state->active = true;
+            } else {
                 std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
                 m_num_active_pipelines -= 1;
             }
@@ -477,6 +478,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             return;
         } else {
             pipeline->abort(iteration);
+            state->active = false;
         }
     }
 

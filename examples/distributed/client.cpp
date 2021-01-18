@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
                 &comm, g_ssg_file, 0, g_pipeline);
 
         // start iteration
-        pipeline.start(0);
+        pipeline.start(42);
 
         // create some data
         std::vector<double> mydata(32*54);
