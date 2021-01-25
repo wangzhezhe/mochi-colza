@@ -497,7 +497,14 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
     na_addr_t _requestMonaAddressFromSSGMember(ssg_member_id_t member_id) {
         hg_addr_t hg_addr = ssg_get_group_member_addr(m_gid, member_id);
-        auto ph = tl::provider_handle(get_engine(), hg_addr, get_provider_id(), false);
+        tl::provider_handle ph;
+        try {
+            ph = tl::provider_handle(get_engine(), hg_addr, get_provider_id(), false);
+        } catch(const std::exception& e) {
+            spdlog::critical("Could not create provider handle from address to member {}: {}",
+                             member_id, e.what());
+            throw;
+        }
         RequestResult<std::string> result;
         bool ok = false;
         while(!ok) {
