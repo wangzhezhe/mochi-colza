@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     }
 
     // Create Mona instance
-    mona_instance_t mona = mona_init(g_address.c_str(), NA_TRUE, NULL);
+    mona_instance_t mona = mona_init_thread(g_address.c_str(), NA_TRUE, NULL, NA_TRUE);
 
     // Print MoNA address for information
     na_addr_t mona_addr;
