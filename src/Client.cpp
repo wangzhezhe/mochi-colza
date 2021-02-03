@@ -101,6 +101,10 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
         std::vector<char> packed_addresses(group_size*256, 0);
         for(int i = 0 ; i < group_size ; i++) {
             auto addr = ssg_group_id_get_addr_str(gid, i);
+            if(!addr)
+                throw Exception(ErrorCode::SSG_ERROR,
+                    "Could not get address of rank "s + std::to_string(i)
+                    + " in an SSG group of size "s + std::to_string(group_size));
             strcpy(packed_addresses.data() + i*256, addr);
             try {
                 auto pipeline = makePipelineHandle(addr, provider_id, pipeline_name, check);
