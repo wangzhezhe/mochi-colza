@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
-    tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, g_num_threads);
+    tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, 0);
     engine.enable_remote_shutdown();
 
     ssg_group_id_t gid;
@@ -99,7 +99,27 @@ int main(int argc, char** argv) {
                               std::istreambuf_iterator<char>());
     }
 
-    colza::Provider provider(engine, gid, mona, 0, config);
+    // create ESs
+    std::vector<tl::managed<tl::xstream>> colza_xstreams;
+    tl::managed<tl::pool> managed_colza_pool = tl::pool::create(tl::pool::access::mpmc);
+    for(int i=0; i < g_num_threads; i++) {
+        colza_xstreams.push_back(
+            tl::xstream::create(tl::scheduler::predef::basic_wait, *managed_colza_pool));
+    }
+    tl::pool colza_pool;
+    if(g_num_threads == 0) {
+        colza_pool = *managed_colza_pool;
+    } else {
+        colza_pool = tl::xstream::self().get_main_pools(1)[0];
+    }
+    engine.push_prefinalize_callback([&colza_xstreams](){
+        for(auto& es : colza_xstreams) {
+            es->join();
+        }
+        colza_xstreams.clear();
+    });
+
+    colza::Provider provider(engine, gid, mona, 0, config, colza_pool);
 
     spdlog::info("Server running at address {}", (std::string)engine.self());
     engine.wait_for_finalize();
