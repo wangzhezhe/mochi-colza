@@ -12,6 +12,7 @@
 #include "PipelineHandleImpl.hpp"
 #include "TypeSizes.hpp"
 
+#include <thallium/serialization/stl/vector.hpp>
 #include <thallium/serialization/stl/string.hpp>
 #include <thallium/serialization/stl/pair.hpp>
 
