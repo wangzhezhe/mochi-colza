@@ -49,12 +49,17 @@ class ColzaFactory : public bedrock::AbstractServiceFactory {
         return provider->getConfig();
     }
 
-    void *initClient(margo_instance_id mid) override {
-        return static_cast<void *>(new colza::Client(mid));
+    void *initClient(const bedrock::FactoryArgs &args) override {
+        return static_cast<void *>(new colza::Client(args.mid));
     }
 
     void finalizeClient(void *client) override {
         delete static_cast<colza::Client *>(client);
+    }
+
+    std::string getClientConfig(void *p) override {
+        (void)p;
+        return "{}";
     }
 
     void *createProviderHandle(void *c, hg_addr_t address,
@@ -73,7 +78,7 @@ class ColzaFactory : public bedrock::AbstractServiceFactory {
         delete ph;
     }
 
-    const std::vector<bedrock::Dependency> &getDependencies() override {
+    const std::vector<bedrock::Dependency> &getProviderDependencies() override {
         static std::vector<bedrock::Dependency> dependencies;
         if(dependencies.size() == 0) {
             dependencies.resize(1);
@@ -81,6 +86,11 @@ class ColzaFactory : public bedrock::AbstractServiceFactory {
             dependencies[0].type  = "ssg";
             dependencies[0].flags = BEDROCK_REQUIRED;
         }
+        return dependencies;
+    }
+
+    const std::vector<bedrock::Dependency> &getClientDependencies() override {
+        static std::vector<bedrock::Dependency> dependencies;
         return dependencies;
     }
 };
