@@ -19,6 +19,7 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
+#include <fstream>
 #include <dlfcn.h>
 #include <tuple>
 
@@ -123,6 +124,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         }
         m_mona_cv.notify_all();
         _resolveMonaAddresses();
+        _writeCurrentServerAddresses();
         spdlog::trace("[provider:{0}] Registered provider with id {0}", id());
     }
 
@@ -552,6 +554,28 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         m_mona_cv.notify_all();
         spdlog::trace("[provider:{}] Done resolving MoNA addressed of SSG group", id());
         spdlog::trace("[provider:{}] {} addresses found in SSG group", id(), group_size);
+    }
+
+    void _writeCurrentServerAddresses() {
+        auto mid = get_engine().get_margo_instance();
+        auto self_id = ssg_get_self_id(mid);
+        auto self_rank = ssg_get_group_member_rank(m_gid, self_id);
+        if(self_rank != 0) return;
+        std::ofstream out("colza.txt", std::ofstream::out | std::ofstream::trunc);
+        auto group_size = ssg_get_group_size(m_gid);
+        for(int i = 0; i < group_size; i++) {
+            ssg_member_id_t id = ssg_get_group_member_id_from_rank(m_gid, i);
+            hg_addr_t addr = ssg_get_group_member_addr(m_gid, id);
+            char addr_str[1024];
+            hg_size_t addr_str_size = 1024;
+            auto ret = margo_addr_to_string(mid, addr_str, &addr_str_size, addr);
+            if(ret != HG_SUCCESS)
+                throw std::runtime_error("Failed to convert SSG member id to string address"
+                        " for member rank "s + std::to_string(i));
+            out << addr_str;
+            if(i != group_size - 1)
+                out << '\n';
+        }
     }
 
     void _membershipUpdate(ssg_member_id_t member_id,

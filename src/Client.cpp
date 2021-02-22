@@ -15,6 +15,7 @@
 
 #include <ssg.h>
 #include <thallium/serialization/stl/string.hpp>
+#include <fstream>
 
 namespace tl = thallium;
 
@@ -85,6 +86,9 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
     ssg_group_id_t gid = SSG_GROUP_ID_INVALID;
 
     if(comm->rank() == 0) {
+
+        // should be uncommented when SSG finally works
+#if 0
         // load SSG group file
         int num_addrs = SSG_ALL_MEMBERS;
         int ret = ssg_group_id_load(ssg_group_file.c_str(), &num_addrs, &gid);
@@ -117,11 +121,35 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
             }
             free(addr);
         }
+#else
+        std::vector<std::string> addresses;
+        std::string line;
+        std::ifstream fin("colza.txt");
+        while(std::getline(fin,line)){
+            addresses.push_back(line);
+        }
+
+        int group_size = addresses.size();
+        std::vector<char> packed_addresses(group_size*256, 0);
+        for(int i = 0 ; i < group_size; i++) {
+            strcpy(packed_addresses.data() + i*256, addresses[i].c_str());
+            try {
+                auto pipeline = makePipelineHandle(addresses[i], provider_id, pipeline_name, check);
+                pipelines.push_back(std::move(pipeline));
+            } catch(...) {
+                group_size = -1;
+                comm->bcast(&group_size, sizeof(group_size), 0);
+                throw;
+            }
+        }
+#endif
         // communicate group size to everybody
         comm->bcast(&group_size, sizeof(group_size), 0);
         // communicate addresses to everybody
-        comm->bcast(packed_addresses.data(),
+        if(group_size != -1) {
+            comm->bcast(packed_addresses.data(),
                     packed_addresses.size(), 0);
+        }
     } else {
         // get group size from rank 0
         int group_size;

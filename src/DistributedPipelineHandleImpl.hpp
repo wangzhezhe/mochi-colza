@@ -37,7 +37,8 @@ class DistributedPipelineHandleImpl {
     : m_comm(comm)
     , m_client(client)
     , m_gid(gid) {
-        m_group_hash = ComputeGroupHash(gid);
+        if(gid != SSG_GROUP_ID_INVALID)
+            m_group_hash = ComputeGroupHash(gid);
     }
 
     DistributedPipelineHandleImpl(
@@ -48,7 +49,10 @@ class DistributedPipelineHandleImpl {
     : m_comm(comm)
     , m_client(client)
     , m_pipelines(std::move(pipelines))
-    , m_gid(gid) {}
+    , m_gid(gid) {
+        if(gid != SSG_GROUP_ID_INVALID)
+            m_group_hash = ComputeGroupHash(gid);
+    }
 
     ~DistributedPipelineHandleImpl() {
         if(m_gid != SSG_GROUP_ID_INVALID) {
