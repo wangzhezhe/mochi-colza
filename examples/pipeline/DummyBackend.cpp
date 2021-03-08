@@ -4,20 +4,20 @@
  * See COPYRIGHT in top-level directory.
  */
 #include "DummyBackend.hpp"
-#include <iostream>
+#include <spdlog/spdlog.h>
 
 COLZA_REGISTER_BACKEND(dummy, DummyPipeline);
 
 void DummyPipeline::updateMonaAddresses(
         mona_instance_t mona,
         const std::vector<na_addr_t>& addresses) {
-    std::cerr << "Mona addresses have been updated" << std::endl;
+    spdlog::trace("Mona addresses have been updated, group size is now {}", addresses.size());
     (void)addresses;
     (void)mona;
 }
 
 colza::RequestResult<int32_t> DummyPipeline::start(uint64_t iteration) {
-    std::cerr << "Iteration " << iteration << " starting" << std::endl;
+    spdlog::trace("Iteration {} starting", iteration);
     colza::RequestResult<int32_t> result;
     result.success() = true;
     result.value() = 0;
@@ -25,7 +25,7 @@ colza::RequestResult<int32_t> DummyPipeline::start(uint64_t iteration) {
 }
 
 void DummyPipeline::abort(uint64_t iteration) {
-    std::cerr << "Client aborted iteration " << iteration << std::endl;
+    spdlog::trace("Iteration {} aborted", iteration);
 }
 
 colza::RequestResult<int32_t> DummyPipeline::execute(

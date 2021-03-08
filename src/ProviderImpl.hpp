@@ -524,6 +524,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         if(ret != NA_SUCCESS)
             throw Exception(ErrorCode::MONA_ERROR,
                 "mona_addr_lookup failed with error code "s + std::to_string(ret));
+        spdlog::trace("[provider:{}] Successfully obtained MoNA address of member {}", id(), member_id);
         return addr;
     }
 
