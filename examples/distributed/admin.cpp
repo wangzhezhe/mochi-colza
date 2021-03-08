@@ -45,6 +45,9 @@ int main(int argc, char** argv) {
         } else if(g_operation == "destroy") {
             admin.destroyDistributedPipeline(g_ssg_file, 0, g_pipeline, g_token);
             spdlog::info("Destroyed pipeline {}", g_pipeline);
+        } else if(g_operation == "shutdown") {
+            admin.shutdownGroup(g_ssg_file);
+            spdlog::info("Service shut down");
         }
 
         // Any of the above functions may throw a colza::Exception
@@ -71,7 +74,7 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::ValueArg<std::string> logLevel("v","verbose",
             "Log level (trace, debug, info, warning, error, critical, off)", false, "info", "string");
         TCLAP::ValueArg<std::string> ssgFileArg("s","ssg-file","SSG file name", true, "","string");
-        std::vector<std::string> options = { "create", "destroy" };
+        std::vector<std::string> options = { "create", "destroy", "shutdown" };
         TCLAP::ValuesConstraint<std::string> allowedOptions(options);
         TCLAP::ValueArg<std::string> operationArg("x","exec","Operation to execute",true,"create",&allowedOptions);
         cmd.add(addressArg);

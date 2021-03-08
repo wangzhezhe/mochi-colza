@@ -85,28 +85,21 @@ void Admin::createDistributedPipeline(const std::string& ssg_file,
     if(ret != SSG_SUCCESS)
         throw Exception(ErrorCode::SSG_ERROR, "Could not observe SSG group from "s + ssg_file);
 
-    std::vector<std::string> addresses;
     int group_size = ssg_get_group_size(gid);
-    addresses.reserve(group_size);
-    for(int i = 0; i < group_size; i++) {
-        char *addr = ssg_group_id_get_addr_str(gid, i);
-        addresses.emplace_back(addr);
-        free(addr);
-    }
-
-    ssg_group_unobserve(gid);
-
-    auto es = tl::xstream::self();
     std::vector<tl::managed<tl::thread>> ults;
-    for(const auto& addr : addresses) {
-        ults.push_back(es.make_thread([&, this](){
-            createPipeline(addr, provider_id, name, type, config, library, token);
+    for(int i = 0; i < group_size; i++) {
+        ults.push_back(tl::xstream::self().make_thread(
+                [gid, this, i, provider_id, &name, &type, &config, &library, &token]() {
+            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, i);
+            hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+            auto e = tl::endpoint(self->m_engine, a, false);
+            createPipeline(static_cast<std::string>(e), provider_id, name, type, config, library, token);
         }));
     }
-
     for(auto& ult : ults) {
         ult->join();
     }
+    ssg_group_unobserve(gid);
 }
 
 void Admin::destroyDistributedPipeline(const std::string& ssg_file,
@@ -125,28 +118,21 @@ void Admin::destroyDistributedPipeline(const std::string& ssg_file,
         throw Exception(ErrorCode::SSG_ERROR,
             "Could not observe SSG group from "s + ssg_file);
 
-    std::vector<std::string> addresses;
     int group_size = ssg_get_group_size(gid);
-    addresses.reserve(group_size);
-    for(int i = 0; i < group_size; i++) {
-        char *addr = ssg_group_id_get_addr_str(gid, i);
-        addresses.emplace_back(addr);
-        free(addr);
-    }
-
-    ssg_group_unobserve(gid);
-
-    auto es = tl::xstream::self();
     std::vector<tl::managed<tl::thread>> ults;
-    for(const auto& addr : addresses) {
-        ults.push_back(es.make_thread([&, this](){
-            destroyPipeline(addr, provider_id, name, token);
+    for(int i = 0; i < group_size; i++) {
+        ults.push_back(tl::xstream::self().make_thread([gid, this, i, provider_id, &name, &token]() {
+            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, i);
+            hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+            auto e = tl::endpoint(self->m_engine, a, false);
+            destroyPipeline(static_cast<std::string>(e), provider_id, name, token);
         }));
     }
-
     for(auto& ult : ults) {
         ult->join();
     }
+
+    ssg_group_unobserve(gid);
 }
 
 void Admin::shutdownServer(const std::string& address) const {
@@ -154,4 +140,33 @@ void Admin::shutdownServer(const std::string& address) const {
     self->m_engine.shutdown_remote_engine(ep);
 }
 
+void Admin::shutdownGroup(const std::string& ssg_file) const {
+    ssg_group_id_t gid;
+    int num_addrs = -1;
+    int ret = ssg_group_id_load(ssg_file.c_str(), &num_addrs, &gid);
+    if(ret != SSG_SUCCESS)
+        throw Exception(ErrorCode::SSG_ERROR,
+            "Could not open SSG file "s + ssg_file);
+
+    ret = ssg_group_observe(self->m_engine.get_margo_instance(), gid);
+    if(ret != SSG_SUCCESS)
+        throw Exception(ErrorCode::SSG_ERROR,
+            "Could not observe SSG group from "s + ssg_file);
+
+    int group_size = ssg_get_group_size(gid);
+    std::vector<tl::managed<tl::thread>> ults;
+    for(int i = 0; i < group_size; i++) {
+        ults.push_back(tl::xstream::self().make_thread([gid, this, i]() {
+            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, i);
+            hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+            auto e = tl::endpoint(self->m_engine, a, false);
+            self->m_engine.shutdown_remote_engine(e);
+        }));
+    }
+    for(auto& ult : ults) {
+        ult->join();
+    }
+
+    ssg_group_unobserve(gid);
+}
 }

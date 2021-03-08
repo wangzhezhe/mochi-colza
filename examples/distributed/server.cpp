@@ -68,7 +68,11 @@ int main(int argc, char** argv) {
             exit(-1);
         }
     }
-    engine.push_prefinalize_callback([](){ ssg_finalize(); });
+    engine.push_prefinalize_callback([](){
+            spdlog::trace("Finalizing SSG...");
+            ssg_finalize();
+            spdlog::trace("SSG finalized");
+    });
 
     // Write SSG file
     if(rank == 0 && !g_ssg_file.empty() && !g_join) {
@@ -112,11 +116,19 @@ int main(int argc, char** argv) {
     } else {
         colza_pool = tl::xstream::self().get_main_pools(1)[0];
     }
-    engine.push_prefinalize_callback([&colza_xstreams](){
+    engine.push_finalize_callback([&colza_xstreams, &colza_pool](){
+        spdlog::trace("Joining Colza xstreams");
+        for(auto& es : colza_xstreams) {
+            es->make_thread([]() {
+                tl::xstream::self().exit();
+            }, tl::anonymous());
+        }
+        usleep(1);
         for(auto& es : colza_xstreams) {
             es->join();
         }
         colza_xstreams.clear();
+        spdlog::trace("Colza xstreams joined");
     });
 
     colza::Provider provider(engine, gid, mona, 0, config, colza_pool);
@@ -124,7 +136,9 @@ int main(int argc, char** argv) {
     spdlog::info("Server running at address {}", (std::string)engine.self());
     engine.wait_for_finalize();
 
+    spdlog::trace("Engine finalized, now finalizing MoNA...");
     mona_finalize(mona);
+    spdlog::trace("MoNA finalized");
 
     MPI_Finalize();
 

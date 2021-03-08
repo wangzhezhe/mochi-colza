@@ -241,6 +241,13 @@ class Admin {
                          const std::string& pipeline_name,
                          const std::string& token="") const;
 
+    /**
+     * @brief Shutdown all the members of the SSG group.
+     *
+     * @param ssg_file SSG file containing addresses of providers.
+     */
+    void shutdownGroup(const std::string& ssg_file) const;
+
 
     /**
      * @brief Shuts down the target server. The Thallium engine

@@ -102,22 +102,18 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
         int group_size = ssg_get_group_size(gid);
         std::vector<char> packed_addresses(group_size*256, 0);
         for(int i = 0 ; i < group_size ; i++) {
-            auto addr = ssg_group_id_get_addr_str(gid, i);
-            if(!addr)
-                throw Exception(ErrorCode::SSG_ERROR,
-                    "Could not get address of rank "s + std::to_string(i)
-                    + " in an SSG group of size "s + std::to_string(group_size));
-            strcpy(packed_addresses.data() + i*256, addr);
+            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, i);
+            hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+            auto addr = tl::endpoint(self->m_engine, a, false);
+            strcpy(packed_addresses.data() + i*256, static_cast<std::string>(addr).c_str());
             try {
                 auto pipeline = makePipelineHandle(addr, provider_id, pipeline_name, check);
                 pipelines.push_back(std::move(pipeline));
             } catch(...) {
                 group_size = -1;
                 comm->bcast(&group_size, sizeof(group_size), 0);
-                free(addr);
                 throw;
             }
-            free(addr);
         }
         // communicate group size to everybody
         comm->bcast(&group_size, sizeof(group_size), 0);
