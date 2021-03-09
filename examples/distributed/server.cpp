@@ -12,6 +12,12 @@
 #include <spdlog/spdlog.h>
 #include <tclap/CmdLine.h>
 
+#ifdef COLZA_ENABLE_DRC
+extern "C" {
+#include <rdmacred.h>
+}
+#endif
+
 namespace tl = thallium;
 
 static std::string g_address     = "na+sm";
@@ -21,8 +27,9 @@ static std::string g_ssg_file    = "";
 static std::string g_config_file = "";
 static bool        g_join        = false;
 
-
 static void parse_command_line(int argc, char** argv);
+static int64_t setup_credentials();
+static uint32_t get_credential_cookie(int64_t credential_id);
 
 int main(int argc, char** argv) {
     parse_command_line(argc, argv);
@@ -36,35 +43,53 @@ int main(int argc, char** argv) {
     // Initialize SSG
     int ret = ssg_init();
     if(ret != SSG_SUCCESS) {
-        std::cerr << "Could not initialize SSG" << std::endl;
+        spdlog::critical("Could not initialize SSG");
         exit(-1);
     }
+    ssg_group_id_t gid;
 
-    tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, 0);
+    uint32_t cookie = 0;
+    int64_t  credential_id = -1;
+    if(!g_join) {
+        credential_id = setup_credentials();
+        cookie = get_credential_cookie(credential_id);
+    } else {
+        int num_addrs = SSG_ALL_MEMBERS;
+        ret = ssg_group_id_load(g_ssg_file.c_str(), &num_addrs, &gid);
+        if(ret != SSG_SUCCESS) {
+            spdlog::critical("Could not load group id from file");
+            exit(-1);
+        }
+        credential_id = ssg_group_id_get_cred(gid);
+        if(credential_id != -1)
+            cookie = get_credential_cookie(credential_id);
+    }
+
+    hg_init_info hii;
+    memset(&hii, 0, sizeof(hii));
+    std::string cookie_str = std::to_string(cookie);
+    if(credential_id != -1)
+        hii.na_init_info.auth_key = cookie_str.c_str();
+
+    tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, 0, &hii);
     engine.enable_remote_shutdown();
 
-    ssg_group_id_t gid;
     if(!g_join) {
         // Create SSG group using MPI
         ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
         group_config.swim_period_length_ms = 1000;
         group_config.swim_suspect_timeout_periods = 3;
         group_config.swim_subgroup_member_count = 1;
+        group_config.ssg_credential = credential_id;
         gid = ssg_group_create_mpi(engine.get_margo_instance(),
                                    "mygroup",
                                    MPI_COMM_WORLD,
                                    &group_config,
                                    nullptr, nullptr);
     } else {
-        int num_addrs = SSG_ALL_MEMBERS;
-        ret = ssg_group_id_load(g_ssg_file.c_str(), &num_addrs, &gid);
-        if(ret != SSG_SUCCESS) {
-            std::cerr << "Could not load group id from file" << std::endl;
-            exit(-1);
-        }
         ret = ssg_group_join(engine.get_margo_instance(), gid, nullptr, nullptr);
         if(ret != SSG_SUCCESS) {
-            std::cerr << "Could not join SSG group" << std::endl;
+            spdlog::critical("Could not join SSG group");
             exit(-1);
         }
     }
@@ -84,7 +109,7 @@ int main(int argc, char** argv) {
     }
 
     // Create Mona instance
-    mona_instance_t mona = mona_init_thread(g_address.c_str(), NA_TRUE, NULL, NA_TRUE);
+    mona_instance_t mona = mona_init_thread(g_address.c_str(), NA_TRUE, &hii.na_init_info, NA_TRUE);
 
     // Print MoNA address for information
     na_addr_t mona_addr;
@@ -172,4 +197,63 @@ void parse_command_line(int argc, char** argv) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);
     }
+}
+
+int64_t setup_credentials() {
+    uint32_t drc_credential_id = -1;
+#ifdef COLZA_ENABLE_DRC
+    if(g_address.find("gni") == std::string::npos)
+        return -1;
+
+    int      rank;
+    int      ret;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if(rank == 0) {
+        ret = drc_acquire(&drc_credential_id, DRC_FLAGS_FLEX_CREDENTIAL);
+        if(ret != DRC_SUCCESS) {
+            spdlog::critical("drc_acquire failed (ret = {})", ret);
+            exit(-1);
+        }
+    }
+
+    MPI_Bcast(&drc_credential_id, 1, MPI_UINT32_T, 0, MPI_COMM_WORLD);
+
+    if(rank == 0) {
+        ret = drc_grant(drc_credential_id, drc_get_wlm_id(), DRC_FLAGS_TARGET_WLM);
+        if(ret != DRC_SUCCESS) {
+            spdlog::critical("drc_grant failed (ret = {})", ret);
+            exit(-1);
+        }
+        spdlog::info("DRC credential id: {}", drc_credential_id);
+    }
+
+#endif
+    return drc_credential_id;
+}
+
+uint32_t get_credential_cookie(int64_t credential_id) {
+    uint32_t          drc_cookie = 0;
+
+    if(credential_id < 0)
+        return drc_cookie;
+    if(g_address.find("gni") == std::string::npos)
+        return drc_cookie;
+
+#ifdef COLZA_ENABLE_DRC
+
+    drc_info_handle_t drc_credential_info;
+    int               ret;
+
+    ret = drc_access(credential_id, 0, &drc_credential_info);
+    if(ret != DRC_SUCCESS) {
+        spdlog::critical("drc_access failed (ret = {})", ret);
+        exit(-1);
+    }
+
+    drc_cookie = drc_get_first_cookie(drc_credential_info);
+
+#endif
+    return drc_cookie;
 }

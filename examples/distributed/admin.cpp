@@ -9,6 +9,11 @@
 #include <ssg.h>
 #include <iostream>
 #include <vector>
+#ifdef COLZA_ENABLE_DRC
+extern "C" {
+#include <rdmacred.h>
+}
+#endif
 
 namespace tl = thallium;
 
@@ -24,6 +29,7 @@ static std::string g_log_level = "info";
 static std::string g_ssg_file;
 
 static void parse_command_line(int argc, char** argv);
+static uint32_t get_credentials_from_ssg_file();
 
 int main(int argc, char** argv) {
     parse_command_line(argc, argv);
@@ -31,8 +37,16 @@ int main(int argc, char** argv) {
 
     ssg_init();
 
+    uint32_t cookie = get_credentials_from_ssg_file();
+
+    hg_init_info hii;
+    memset(&hii, 0, sizeof(hii));
+    std::string cookie_str = std::to_string(cookie);
+    if(cookie != 0)
+        hii.na_init_info.auth_key = cookie_str.c_str();
+
     // Initialize the thallium server
-    tl::engine engine(g_protocol, THALLIUM_CLIENT_MODE);
+    tl::engine engine(g_protocol, THALLIUM_CLIENT_MODE, false, 0, &hii);
 
     try {
 
@@ -101,4 +115,32 @@ void parse_command_line(int argc, char** argv) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);
     }
+}
+
+uint32_t get_credentials_from_ssg_file() {
+    uint32_t cookie = 0;
+#ifdef COLZA_ENABLE_DRC
+    int num_addrs = 1;
+    ssg_group_id_t gid;
+    int ret = ssg_group_id_load(g_ssg_file.c_str(), &num_addrs, &gid);
+    if(ret != SSG_SUCCESS) {
+        spdlog::critical("Could not load group id from file");
+        exit(-1);
+    }
+    int64_t credential_id = ssg_group_id_get_cred(gid);
+    if(credential_id == -1)
+        return cookie;
+    //ssg_group_destroy(gid);
+
+    drc_info_handle_t drc_credential_info;
+
+    ret = drc_access(credential_id, 0, &drc_credential_info);
+    if(ret != DRC_SUCCESS) {
+        spdlog::critical("drc_access failed (ret = {})", ret);
+        exit(-1);
+    }
+
+    cookie = drc_get_first_cookie(drc_credential_info);
+#endif
+    return cookie;
 }

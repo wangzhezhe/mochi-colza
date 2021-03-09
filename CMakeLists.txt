@@ -10,6 +10,7 @@ add_definitions (-g -Wextra -Wall -Wpedantic)
 option (ENABLE_TESTS    "Build tests" OFF)
 option (ENABLE_EXAMPLES "Build examples" OFF)
 option (ENABLE_BEDROCK  "Build bedrock module" ON)
+option (ENABLE_DRC      "Enable Cray DRC when compiling examples" OFF)
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
@@ -46,9 +47,15 @@ find_package (nlohmann_json REQUIRED)
 find_package (TCLAP REQUIRED)
 # search for spdlog
 find_package(spdlog REQUIRED)
-# search of bedrock if needed
+# search for bedrock if needed
 if (${ENABLE_BEDROCK})
     find_package(bedrock REQUIRED)
+endif ()
+# search for DRC if needed
+if (${ENABLE_DRC})
+    find_package (DRC REQUIRED)
+    add_definitions (-DCOLZA_ENABLE_DRC)
+    include_directories (${DRC_INCLUDE_DIRS})
 endif ()
 
 # library version set here (e.g. for shared libs).
