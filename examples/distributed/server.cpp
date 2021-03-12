@@ -20,12 +20,13 @@ extern "C" {
 
 namespace tl = thallium;
 
-static std::string g_address     = "na+sm";
-static int         g_num_threads = 0;
-static std::string g_log_level   = "info";
-static std::string g_ssg_file    = "";
-static std::string g_config_file = "";
-static bool        g_join        = false;
+static std::string g_address        = "na+sm";
+static int         g_num_threads    = 0;
+static std::string g_log_level      = "info";
+static std::string g_ssg_file       = "";
+static std::string g_config_file    = "";
+static bool        g_join           = false;
+static unsigned    g_swim_period_ms = 1000;
 
 static void parse_command_line(int argc, char** argv);
 static int64_t setup_credentials();
@@ -77,7 +78,7 @@ int main(int argc, char** argv) {
     if(!g_join) {
         // Create SSG group using MPI
         ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
-        group_config.swim_period_length_ms = 10;
+        group_config.swim_period_length_ms = g_swim_period_ms;
         group_config.swim_suspect_timeout_periods = 3;
         group_config.swim_subgroup_member_count = 1;
         group_config.ssg_credential = credential_id;
@@ -180,19 +181,22 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::ValueArg<std::string> ssgFile("s", "ssg-file", "SSG file name", false, "", "string");
         TCLAP::ValueArg<std::string> configFile("c", "config", "config file name", false, "", "string");
         TCLAP::SwitchArg joinGroup("j","join","Join an existing group rather than create it", false);
+        TCLAP::ValueArg<unsigned> swimPeriod("p","swim-period-length", "Length of the SWIM period in milliseconds", false, 1000, "int");
         cmd.add(addressArg);
         cmd.add(numThreads);
         cmd.add(logLevel);
         cmd.add(ssgFile);
         cmd.add(configFile);
         cmd.add(joinGroup);
+        cmd.add(swimPeriod);
         cmd.parse(argc, argv);
-        g_address     = addressArg.getValue();
-        g_num_threads = numThreads.getValue();
-        g_log_level   = logLevel.getValue();
-        g_ssg_file    = ssgFile.getValue();
-        g_config_file = configFile.getValue();
-        g_join        = joinGroup.getValue();
+        g_address        = addressArg.getValue();
+        g_num_threads    = numThreads.getValue();
+        g_log_level      = logLevel.getValue();
+        g_ssg_file       = ssgFile.getValue();
+        g_config_file    = configFile.getValue();
+        g_join           = joinGroup.getValue();
+        g_swim_period_ms = swimPeriod.getValue();
     } catch(TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);
