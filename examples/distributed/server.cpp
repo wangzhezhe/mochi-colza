@@ -31,6 +31,7 @@ static unsigned    g_swim_period_ms = 1000;
 static void parse_command_line(int argc, char** argv);
 static int64_t setup_credentials();
 static uint32_t get_credential_cookie(int64_t credential_id);
+static void update_group_file(void* group_data, ssg_member_id_t member_id, ssg_member_update_type_t update_type);
 
 int main(int argc, char** argv) {
     parse_command_line(argc, argv);
@@ -159,6 +160,11 @@ int main(int argc, char** argv) {
 
     colza::Provider provider(engine, gid, mona, 0, config, colza_pool);
 
+    // Add a callback to rewrite the SSG file when the group membership changes
+    ssg_group_add_membership_update_callback(
+            gid, update_group_file,
+            reinterpret_cast<void*>(gid));
+
     spdlog::info("Server running at address {}", (std::string)engine.self());
     engine.wait_for_finalize();
 
@@ -200,6 +206,16 @@ void parse_command_line(int argc, char** argv) {
     } catch(TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);
+    }
+}
+
+void update_group_file(void* group_data, ssg_member_id_t, ssg_member_update_type_t) {
+    ssg_group_id_t gid = reinterpret_cast<ssg_group_id_t>(group_data);
+    int r = ssg_get_group_self_rank(gid);
+    if(r != 0) return;
+    int ret = ssg_group_id_store(g_ssg_file.c_str(), gid, SSG_ALL_MEMBERS);
+    if(ret != SSG_SUCCESS) {
+        spdlog::error("Could not store updated SSG file {}", g_ssg_file);
     }
 }
 
