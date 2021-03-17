@@ -143,7 +143,7 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
     }
 
     auto impl = std::make_shared<DistributedPipelineHandleImpl>(
-            comm, self, gid, std::move(pipelines));
+            comm, self, gid, ssg_group_file, std::move(pipelines));
 
     return DistributedPipelineHandle(std::move(impl));
 }

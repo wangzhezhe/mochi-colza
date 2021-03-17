@@ -82,6 +82,7 @@ void DistributedPipelineHandle::start(uint64_t iteration) const {
         std::vector<PipelineHandle*> started;
         started.reserve(num_pipelines);
         bool ok = true;
+        spdlog::debug("Sending a start command to pipelines, with group_hash = {}", self->m_group_hash);
 
         for(auto& pipeline : self->m_pipelines) {
             try {
@@ -90,8 +91,10 @@ void DistributedPipelineHandle::start(uint64_t iteration) const {
                 started.push_back(&pipeline);
                 if(!result.success()) {
                     ok = false;
-                    if(result.value() == (int)ErrorCode::INVALID_GROUP_HASH)
+                    if(result.value() == (int)ErrorCode::INVALID_GROUP_HASH) {
+                        spdlog::warn("Invalid group hash detected, group view needs to be updated");
                         retry = true;
+                    }
                     break;
                 }
             } catch(const std::exception& ex) {

@@ -105,6 +105,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_get_mona_addr(define("colza_get_mona_addr", &ProviderImpl::getMonaAddress, pool))
     {
         m_group_hash = ComputeGroupHash(m_gid);
+        spdlog::trace("[provider:{}] Group hash computed: {}", id(), m_group_hash);
         {
             std::lock_guard<tl::mutex> lock(m_mona_mtx);
             na_addr_t my_mona_addr;
@@ -354,6 +355,14 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                uint64_t iteration) {
         spdlog::trace("[provider:{}] Received start request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
+        if(group_hash != m_group_hash) {
+            result.value() = (int)ErrorCode::INVALID_GROUP_HASH;
+            result.success() = false;
+            result.error() = "Inconsistent group view";
+            spdlog::error("[provider:{}] Incorrect group hash sent by client", id());
+            req.respond(result);
+            return;
+        }
         FIND_PIPELINE(state);
         auto pipeline = state->pipeline;
         if(state->active) {
@@ -560,6 +569,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                            ssg_member_update_type_t update_type) {
         spdlog::trace("[provider:{}] Member {} updated", id(), member_id);
         m_group_hash = UpdateGroupHash(m_group_hash, member_id);
+        spdlog::trace("[provider:{}] Group hash was updated to {}", id(), m_group_hash);
         // TODO use the provider's pool instead of self ES
         tl::xstream::self().make_thread([this, member_id, update_type]() {
 

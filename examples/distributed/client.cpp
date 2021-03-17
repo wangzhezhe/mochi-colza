@@ -22,6 +22,8 @@ static std::string g_address;
 static std::string g_pipeline;
 static std::string g_log_level = "info";
 static std::string g_ssg_file;
+static uint64_t    g_num_iterations = 10;
+static uint64_t    g_wait_between_iterations = 2;
 
 static void parse_command_line(int argc, char** argv);
 static uint32_t get_credentials_from_ssg_file();
@@ -59,37 +61,42 @@ int main(int argc, char** argv) {
                 &comm, g_ssg_file, 0, g_pipeline);
 
         // start iteration
-        pipeline.start(42);
+        for(uint64_t iteration = 0; iteration < g_num_iterations; iteration++) {
 
-        // create some data
-        std::vector<double> mydata(32*54);
-        for(unsigned i=0; i < 32; i++)
-            for(unsigned j=0; j < 54; j++)
-                mydata[i*54+j] = i*j;
-        std::vector<size_t> dimensions = { 32, 54 };
-        std::vector<int64_t> offsets = { 0, 0 };
-        auto type = colza::Type::FLOAT64;
+            pipeline.start(iteration);
 
-        spdlog::trace("Calling stage");
+            // create some data
+            std::vector<double> mydata(32*54);
+            for(unsigned i=0; i < 32; i++)
+                for(unsigned j=0; j < 54; j++)
+                    mydata[i*54+j] = i*j;
+            std::vector<size_t> dimensions = { 32, 54 };
+            std::vector<int64_t> offsets = { 0, 0 };
+            auto type = colza::Type::FLOAT64;
 
-        // stage the data at iteration 42
-        int32_t result;
-        pipeline.stage("mydata", 42, rank,
-                       dimensions, offsets,
-                       type, mydata.data(),
-                       &result);
+            spdlog::trace("Calling stage({})", iteration);
 
-        spdlog::trace("Calling execute");
+            // stage the data at iteration 42
+            int32_t result;
+            pipeline.stage("mydata", iteration, rank,
+                    dimensions, offsets,
+                    type, mydata.data(),
+                    &result);
 
-        // execute the pipeline
-        pipeline.execute(42);
+            spdlog::trace("Calling execute({})", iteration);
 
-        spdlog::trace("Calling cleanup");
+            // execute the pipeline
+            pipeline.execute(iteration);
 
-        // cleanup the pipeline
-        pipeline.cleanup(42);
+            spdlog::trace("Calling cleanup({})", iteration);
 
-        spdlog::trace("Done");
+            // cleanup the pipeline
+            pipeline.cleanup(iteration);
+
+            spdlog::trace("Iteration {} done", iteration);
+
+            sleep(g_wait_between_iterations);
+        }
 
     } catch(const colza::Exception& ex) {
         std::cerr << ex.what() << std::endl;

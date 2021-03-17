@@ -27,15 +27,18 @@ class DistributedPipelineHandleImpl {
     };
     std::vector<PipelineHandle> m_pipelines;
     // SSG info are only valid on rank 0
+    const std::string           m_ssg_group_file;
     ssg_group_id_t              m_gid;
     uint64_t                    m_group_hash = 0;
 
     DistributedPipelineHandleImpl(
         const ClientCommunicator* comm,
         const std::shared_ptr<ClientImpl>& client,
+        std::string ssg_group_file,
         ssg_group_id_t gid)
     : m_comm(comm)
     , m_client(client)
+    , m_ssg_group_file(std::move(ssg_group_file))
     , m_gid(gid) {
         if(gid != SSG_GROUP_ID_INVALID)
             m_group_hash = ComputeGroupHash(gid);
@@ -45,10 +48,12 @@ class DistributedPipelineHandleImpl {
         const ClientCommunicator* comm,
         const std::shared_ptr<ClientImpl>& client,
         ssg_group_id_t gid,
+        std::string ssg_group_file,
         std::vector<PipelineHandle>&& pipelines)
     : m_comm(comm)
     , m_client(client)
     , m_pipelines(std::move(pipelines))
+    , m_ssg_group_file(std::move(ssg_group_file))
     , m_gid(gid) {
         if(gid != SSG_GROUP_ID_INVALID)
             m_group_hash = ComputeGroupHash(gid);
@@ -57,7 +62,7 @@ class DistributedPipelineHandleImpl {
     ~DistributedPipelineHandleImpl() {
         if(m_gid != SSG_GROUP_ID_INVALID) {
             ssg_group_unobserve(m_gid);
-            //ssg_group_destroy(m_gid);
+            ssg_group_destroy(m_gid);
         }
     }
 };
