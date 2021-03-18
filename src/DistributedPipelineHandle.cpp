@@ -74,7 +74,7 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
         while(retry) {
 
             if(!first_attempt) {
-                spdlog::debug("Updating view of SSG group");
+                spdlog::trace("Updating view of SSG group");
                 auto new_dist_pipeline = Client(self->m_client).makeDistributedPipelineHandle(
                         self->m_comm, self->m_ssg_group_file, self->m_provider_id,
                         self->m_name, false);
@@ -89,7 +89,7 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
             std::vector<PipelineHandle*> started;
             started.reserve(num_pipelines);
             ok = true;
-            spdlog::debug("Sending a start command to pipelines, with group_hash = {}", self->m_group_hash);
+            spdlog::trace("Sending a start command to pipelines, with group_hash = {}", self->m_group_hash);
 
             for(auto& pipeline : self->m_pipelines) {
                 try {
