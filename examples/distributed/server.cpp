@@ -54,6 +54,7 @@ int main(int argc, char** argv) {
     int64_t  credential_id = -1;
     if(!g_join) {
         credential_id = setup_credentials();
+        spdlog::trace("Credential id created: {}", credential_id);
         cookie = get_credential_cookie(credential_id);
     } else {
         int num_addrs = SSG_ALL_MEMBERS;
@@ -63,6 +64,7 @@ int main(int argc, char** argv) {
             exit(-1);
         }
         credential_id = ssg_group_id_get_cred(gid);
+        spdlog::trace("Credential id read from SSG file: {}", credential_id);
         if(credential_id != -1)
             cookie = get_credential_cookie(credential_id);
     }
