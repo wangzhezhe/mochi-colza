@@ -115,7 +115,6 @@ class Client {
             const std::string& pipeline_name,
             bool check = true) const;
 
-
     /**
      * @brief Checks that the Client instance is valid.
      */

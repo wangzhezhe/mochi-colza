@@ -55,60 +55,86 @@ void DistributedPipelineHandle::setHashFunction(const HashFunction& hash) {
     self->m_hash = hash;
 }
 
-void DistributedPipelineHandle::start(uint64_t iteration) const {
+void DistributedPipelineHandle::start(uint64_t iteration) {
     if(not self)
         throw Exception(ErrorCode::INVALID_INSTANCE,
             "Invalid colza::DistributedPipelineHandle object");
     self->m_comm->barrier();
     int my_rank = self->m_comm->rank();
 
-    if(my_rank != 0)
-        return;
-
     auto& start = self->m_client->m_start;
     auto& abort = self->m_client->m_abort;
 
+    bool ok = false;
     bool retry = true;
+    bool first_attempt = true;
 
-    while(retry) {
+    if(my_rank == 0) {
 
-        // TODO update group hash here
+        while(retry) {
 
-        retry = false;
+            if(!first_attempt) {
+                spdlog::debug("Updating view of SSG group");
+                auto new_dist_pipeline = Client(self->m_client).makeDistributedPipelineHandle(
+                        self->m_comm, self->m_ssg_group_file, self->m_provider_id,
+                        self->m_name, false);
+                self = std::move(new_dist_pipeline.self);
+            }
 
-        const auto group_hash = self->m_group_hash;
-        auto num_pipelines = self->m_pipelines.size();
+            retry = false;
 
-        std::vector<PipelineHandle*> started;
-        started.reserve(num_pipelines);
-        bool ok = true;
-        spdlog::debug("Sending a start command to pipelines, with group_hash = {}", self->m_group_hash);
+            const auto group_hash = self->m_group_hash;
+            auto num_pipelines = self->m_pipelines.size();
 
-        for(auto& pipeline : self->m_pipelines) {
-            try {
-                RequestResult<int32_t> result = start.on(pipeline.self->m_ph)(
-                        group_hash, pipeline.self->m_name, iteration);
-                started.push_back(&pipeline);
-                if(!result.success()) {
-                    ok = false;
-                    if(result.value() == (int)ErrorCode::INVALID_GROUP_HASH) {
-                        spdlog::warn("Invalid group hash detected, group view needs to be updated");
-                        retry = true;
+            std::vector<PipelineHandle*> started;
+            started.reserve(num_pipelines);
+            ok = true;
+            spdlog::debug("Sending a start command to pipelines, with group_hash = {}", self->m_group_hash);
+
+            for(auto& pipeline : self->m_pipelines) {
+                try {
+                    RequestResult<int32_t> result = start.on(pipeline.self->m_ph)(
+                            group_hash, pipeline.self->m_name, iteration);
+                    started.push_back(&pipeline);
+                    if(!result.success()) {
+                        ok = false;
+                        if(result.value() == (int)ErrorCode::INVALID_GROUP_HASH) {
+                            spdlog::warn("Invalid group hash detected, group view needs to be updated");
+                            retry = true;
+                        }
+                        break;
                     }
+                } catch(const std::exception& ex) {
+                    ok = false;
                     break;
                 }
-            } catch(const std::exception& ex) {
-                ok = false;
-                break;
             }
+
+            self->m_comm->bcast(&ok, sizeof(ok), 0);
+            if(!ok) { // one RPC failed to be sent, send "abort to the
+                for(auto pipeline : started) {
+                    try {
+                        abort.on(pipeline->self->m_ph)(pipeline->self->m_name, iteration);
+                    } catch(...) {
+                        spdlog::error("Could not abort iteration on pipeline {} at address {}",
+                                pipeline->self->m_name,
+                                static_cast<std::string>(pipeline->self->m_name));
+                    }
+                }
+            }
+
+            first_attempt = false;
         }
 
-        if(!ok) { // one RPC failed to be sent, send "abort to the
-            for(auto pipeline : started) {
-                try {
-                    abort.on(pipeline->self->m_ph)(pipeline->self->m_name, iteration);
-                } catch(...) {}
-            }
+    } else { // non-0 ranks
+
+        self->m_comm->bcast(&ok, sizeof(ok), 0);
+        while(not ok) {
+            auto new_dist_pipeline = Client(self->m_client).makeDistributedPipelineHandle(
+                self->m_comm, self->m_ssg_group_file, self->m_provider_id,
+                self->m_name, false);
+            self = std::move(new_dist_pipeline.self);
+            self->m_comm->bcast(&ok, sizeof(ok), 0);
         }
     }
 }

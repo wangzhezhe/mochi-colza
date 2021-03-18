@@ -96,10 +96,12 @@ class DistributedPipelineHandle {
 
     /**
      * @brief Start the pipeline on a given iteration.
+     * This function is not marked const since it can lead to the
+     * distributed pipeline reconfiguring itself.
      *
      * @param iteration Iteration to start.
      */
-    void start(uint64_t iteration) const;
+    void start(uint64_t iteration);
 
     /**
      * @brief Stage some data into the pipeline using a bulk handle.
