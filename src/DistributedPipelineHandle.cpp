@@ -121,6 +121,10 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
                                 static_cast<std::string>(pipeline->self->m_name));
                     }
                 }
+                if(!first_attempt) {
+                    // if it's the second attempt already, slow down querying the file
+                    tl::thread::sleep(self->m_client->m_engine, 100);
+                }
             }
 
             first_attempt = false;
