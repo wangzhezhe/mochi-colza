@@ -75,7 +75,8 @@ int main(int argc, char** argv) {
     if(credential_id != -1)
         hii.na_init_info.auth_key = cookie_str.c_str();
 
-    tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, 0, &hii);
+    // we use one RPC thread to run SSG RPCs
+    tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, 1, &hii);
     engine.enable_remote_shutdown();
 
     if(!g_join) {
