@@ -137,6 +137,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                     "Could not serialize MoNA address");
             }
             m_mona_self_addr = buf;
+            spdlog::trace("[provider:{}] MoNA address: {}", id(), m_mona_self_addr);
         }
         m_mona_cv.notify_all();
         _resolveMonaAddresses();
@@ -563,21 +564,23 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         auto group_size = ssg_get_group_size(m_gid);
         std::vector<ssg_member_id_t> member_ids(group_size);
         ssg_get_group_member_ids_from_range(m_gid, 0, group_size-1, member_ids.data());
+        decltype(m_mona_addresses) tmp_addresses;
+        for(int i = 0; i < group_size; i++) {
+            int j = (self_rank + i) % group_size;
+            ssg_member_id_t member_id = member_ids[j];
+            if(m_mona_addresses.count(member_id) != 0)
+                continue;
+            if(member_id == self_id) {
+                na_addr_t self_mona_addr;
+                mona_addr_self(m_mona, &self_mona_addr);
+                tmp_addresses[member_id] = self_mona_addr;
+            } else {
+                tmp_addresses[member_id] = _requestMonaAddressFromSSGMember(member_id);
+            }
+        }
         {
             std::lock_guard<tl::mutex> lock(m_mona_mtx);
-            for(int i = 0; i < group_size; i++) {
-                int j = (self_rank + i) % group_size;
-                ssg_member_id_t member_id = member_ids[j];
-                if(m_mona_addresses.count(member_id) != 0)
-                    continue;
-                if(member_id == self_id) {
-                    na_addr_t self_mona_addr;
-                    mona_addr_self(m_mona, &self_mona_addr);
-                    m_mona_addresses[member_id] = self_mona_addr;
-                } else {
-                    m_mona_addresses[member_id] = _requestMonaAddressFromSSGMember(member_id);
-                }
-            }
+            m_mona_addresses.insert(tmp_addresses.begin(), tmp_addresses.end());
         }
         m_mona_cv.notify_all();
         spdlog::trace("[provider:{}] Done resolving MoNA addressed of SSG group", id());
