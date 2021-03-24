@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
                               std::istreambuf_iterator<char>());
     }
 
-    colza::Provider provider(engine, gid, mona, 0, config);
+    colza::Provider provider(engine, gid, false, mona, 0, config);
 
     spdlog::info("Server running at address {}", (std::string)engine.self());
     engine.wait_for_finalize();

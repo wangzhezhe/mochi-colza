@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     mona_instance_t mona = mona_init("ofi+tcp", NA_TRUE, NULL);
 
     // Initialize the Sonata provider
-    colza::Provider provider(engine, gid, mona);
+    colza::Provider provider(engine, gid, false, mona);
 
     // Run the tests.
     bool wasSucessful = runner.run();

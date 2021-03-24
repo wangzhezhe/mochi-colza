@@ -97,11 +97,11 @@ int main(int argc, char** argv) {
 
             sleep(g_wait_between_iterations);
         }
-
     } catch(const colza::Exception& ex) {
         std::cerr << ex.what() << std::endl;
         exit(-1);
     }
+
     spdlog::trace("Finalizing engine");
 
     engine.finalize();

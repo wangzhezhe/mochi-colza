@@ -35,7 +35,8 @@ class ColzaFactory : public bedrock::AbstractServiceFactory {
             return nullptr;
         }
         mona_instance_t mona = reinterpret_cast<mona_instance_t>(it->second[0].handle);
-        auto provider = new colza::Provider(mid, gid, mona, provider_id, config, pool);
+        // TODO properly handle "must_join" argument
+        auto provider = new colza::Provider(mid, gid, false, mona, provider_id, config, pool);
         return static_cast<void *>(provider);
     }
 

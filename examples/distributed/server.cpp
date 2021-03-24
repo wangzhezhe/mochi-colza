@@ -92,11 +92,7 @@ int main(int argc, char** argv) {
                                    &group_config,
                                    nullptr, nullptr);
     } else {
-        ret = ssg_group_join(engine.get_margo_instance(), gid, nullptr, nullptr);
-        if(ret != SSG_SUCCESS) {
-            spdlog::critical("Could not join SSG group");
-            exit(-1);
-        }
+        // ssg_group_join will be called in the provider constructor
     }
     engine.push_prefinalize_callback([](){
             spdlog::trace("Finalizing SSG...");
@@ -161,7 +157,7 @@ int main(int argc, char** argv) {
         spdlog::trace("Colza xstreams joined");
     });
 
-    colza::Provider provider(engine, gid, mona, 0, config, colza_pool);
+    colza::Provider provider(engine, gid, g_join, mona, 0, config, colza_pool);
 
     // Add a callback to rewrite the SSG file when the group membership changes
     ssg_group_add_membership_update_callback(

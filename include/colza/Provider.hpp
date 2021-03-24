@@ -32,6 +32,7 @@ class Provider {
      *
      * @param engine Thallium engine to use to receive RPCs.
      * @param gid SSG group this executor is part of.
+     * @param must_join whether the provider should join the SSG group.
      * @param mona Mona instance.
      * @param provider_id Provider id.
      * @param config JSON-formatted configuration.
@@ -39,6 +40,7 @@ class Provider {
      */
     Provider(const tl::engine& engine,
              ssg_group_id_t gid,
+             bool must_join,
              mona_instance_t mona,
              uint16_t provider_id = 0,
              const std::string& config = "",
@@ -49,6 +51,7 @@ class Provider {
      *
      * @param mid Margo instance id to use to receive RPCs.
      * @param gid SSG group this executor is part of.
+     * @param must_join whether the provider should join the SSG group.
      * @param mona Mona instance.
      * @param provider_id Provider id.
      * @param config JSON-formatted configuration.
@@ -56,6 +59,7 @@ class Provider {
      */
     Provider(margo_instance_id mid,
              ssg_group_id_t gid,
+             bool must_join,
              mona_instance_t mona,
              uint16_t provider_id = 0,
              const std::string& config = "",

@@ -98,6 +98,7 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
         if(ret != SSG_SUCCESS)
             throw Exception(ErrorCode::SSG_ERROR,
                 "Could not observe the SSG group from file "s + ssg_group_file);
+
         // get string addresses
         int group_size = ssg_get_group_size(gid);
         std::vector<char> packed_addresses(group_size*256, 0);
@@ -122,6 +123,7 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
             comm->bcast(packed_addresses.data(),
                     packed_addresses.size(), 0);
         }
+
     } else {
         // get group size from rank 0
         int group_size;
