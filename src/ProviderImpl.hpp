@@ -112,7 +112,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                     static_cast<void*>(this));
             if(ret != SSG_SUCCESS) {
                 throw Exception(ErrorCode::SSG_ERROR,
-                    "Could not join SSG group (ssg_group_join returned {})", ret);
+                    "Could not join SSG group (ssg_group_join returned "s +
+                    std::to_string(ret) + ")");
             }
         } else {
             ssg_group_add_membership_update_callback(
@@ -168,7 +169,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     }
 
     void processConfig(const std::string& config) {
-        if(config.empty()) return;
+        spdlog::trace("[provider:{}] Processing Colza configuration", id());
+        if(config.empty()) {
+            spdlog::trace("[provider:{}] Colza configuration is empty", id());
+            return;
+        }
         json json_config;
         try {
             json_config = json::parse(config);
