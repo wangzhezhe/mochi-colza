@@ -27,6 +27,7 @@ static std::string g_ssg_file       = "";
 static std::string g_config_file    = "";
 static bool        g_join           = false;
 static unsigned    g_swim_period_ms = 1000;
+static int64_t     g_drc_credential = -1;
 
 static void parse_command_line(int argc, char** argv);
 static int64_t setup_credentials();
@@ -51,11 +52,10 @@ int main(int argc, char** argv) {
     ssg_group_id_t gid;
 
     uint32_t cookie = 0;
-    int64_t  credential_id = -1;
     if(!g_join) {
-        credential_id = setup_credentials();
-        spdlog::trace("Credential id created: {}", credential_id);
-        cookie = get_credential_cookie(credential_id);
+        g_drc_credential = g_drc_credential == -1 ? setup_credentials() : g_drc_credential;
+        spdlog::trace("Credential id is {}", g_drc_credential);
+        cookie = get_credential_cookie(g_drc_credential);
     } else {
         int num_addrs = SSG_ALL_MEMBERS;
         ret = ssg_group_id_load(g_ssg_file.c_str(), &num_addrs, &gid);
@@ -63,16 +63,16 @@ int main(int argc, char** argv) {
             spdlog::critical("Could not load group id from file");
             exit(-1);
         }
-        credential_id = ssg_group_id_get_cred(gid);
-        spdlog::trace("Credential id read from SSG file: {}", credential_id);
-        if(credential_id != -1)
-            cookie = get_credential_cookie(credential_id);
+        g_drc_credential = ssg_group_id_get_cred(gid);
+        spdlog::trace("Credential id read from SSG file: {}", g_drc_credential);
+        if(g_drc_credential != -1)
+            cookie = get_credential_cookie(g_drc_credential);
     }
 
     hg_init_info hii;
     memset(&hii, 0, sizeof(hii));
     std::string cookie_str = std::to_string(cookie);
-    if(credential_id != -1)
+    if(g_drc_credential != -1)
         hii.na_init_info.auth_key = cookie_str.c_str();
 
     // we use one RPC thread to run SSG RPCs
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
         group_config.swim_period_length_ms = g_swim_period_ms;
         group_config.swim_suspect_timeout_periods = 3;
         group_config.swim_subgroup_member_count = 1;
-        group_config.ssg_credential = credential_id;
+        group_config.ssg_credential = g_drc_credential;
         gid = ssg_group_create_mpi(engine.get_margo_instance(),
                                    "mygroup",
                                    MPI_COMM_WORLD,
@@ -187,6 +187,7 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::ValueArg<std::string> configFile("c", "config", "config file name", false, "", "string");
         TCLAP::SwitchArg joinGroup("j","join","Join an existing group rather than create it", false);
         TCLAP::ValueArg<unsigned> swimPeriod("p","swim-period-length", "Length of the SWIM period in milliseconds", false, 1000, "int");
+        TCLAP::ValueArg<int64_t> drc("d","drc-credential-id", "DRC credential ID, if already setup", false, -1, "int");
         cmd.add(addressArg);
         cmd.add(numThreads);
         cmd.add(logLevel);
@@ -194,6 +195,7 @@ void parse_command_line(int argc, char** argv) {
         cmd.add(configFile);
         cmd.add(joinGroup);
         cmd.add(swimPeriod);
+        cmd.add(drc);
         cmd.parse(argc, argv);
         g_address        = addressArg.getValue();
         g_num_threads    = numThreads.getValue();
@@ -202,6 +204,7 @@ void parse_command_line(int argc, char** argv) {
         g_config_file    = configFile.getValue();
         g_join           = joinGroup.getValue();
         g_swim_period_ms = swimPeriod.getValue();
+        g_drc_credential = drc.getValue();
     } catch(TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);
