@@ -169,4 +169,40 @@ void Admin::shutdownGroup(const std::string& ssg_file) const {
 
     ssg_group_unobserve(gid);
 }
+
+void Admin::makeServerLeave(const std::string& address, uint16_t provider_id) const {
+    auto ep = self->m_engine.lookup(address);
+    auto ph = tl::provider_handle(ep, provider_id);
+    self->m_leave.on(ph)();
+}
+
+void Admin::makeServersLeave(
+        const std::string& ssg_file,
+        const std::vector<int>& ranks,
+        uint16_t provider_id) const {
+    ssg_group_id_t gid;
+    int num_addrs = -1;
+    int ret = ssg_group_id_load(ssg_file.c_str(), &num_addrs, &gid);
+    if(ret != SSG_SUCCESS)
+        throw Exception(ErrorCode::SSG_ERROR,
+            "Could not open SSG file "s + ssg_file);
+
+    ret = ssg_group_observe(self->m_engine.get_margo_instance(), gid);
+    if(ret != SSG_SUCCESS)
+        throw Exception(ErrorCode::SSG_ERROR,
+            "Could not observe SSG group from "s + ssg_file);
+
+    int group_size = ssg_get_group_size(gid);
+    for(auto rank : ranks) {
+        if(rank < 0 || rank >= group_size)
+            continue;
+        ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, rank);
+        hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+        auto ph = tl::provider_handle(self->m_engine, a, provider_id, false);
+        self->m_leave.on(ph)();
+    }
+
+    ssg_group_unobserve(gid);
+}
+
 }

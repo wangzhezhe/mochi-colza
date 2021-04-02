@@ -19,11 +19,13 @@ class AdminImpl {
     tl::engine           m_engine;
     tl::remote_procedure m_create_pipeline;
     tl::remote_procedure m_destroy_pipeline;
+    tl::remote_procedure m_leave;
 
     AdminImpl(const tl::engine& engine)
     : m_engine(engine)
     , m_create_pipeline(m_engine.define("colza_create_pipeline"))
     , m_destroy_pipeline(m_engine.define("colza_destroy_pipeline"))
+    , m_leave(m_engine.define("colza_leave").disable_response())
     {}
 
     AdminImpl(margo_instance_id mid)

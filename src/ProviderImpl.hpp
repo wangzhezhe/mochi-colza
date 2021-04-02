@@ -82,12 +82,14 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     tl::remote_procedure m_execute;
     tl::remote_procedure m_cleanup;
     tl::remote_procedure m_abort;
+    tl::remote_procedure m_leave;
     // Other RPCs
     tl::remote_procedure m_get_mona_addr;
     // Pipelines
     std::unordered_map<std::string, std::shared_ptr<PipelineState>> m_pipelines;
     size_t m_num_active_pipelines = 0;
     tl::mutex m_pipelines_mtx;
+    tl::condition_variable m_pipelines_cv;
 
     ProviderImpl(const tl::engine& engine, ssg_group_id_t gid, bool must_join,
                  mona_instance_t mona, uint16_t provider_id, const tl::pool& pool)
@@ -103,6 +105,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_execute(define("colza_execute", &ProviderImpl::execute, pool))
     , m_cleanup(define("colza_cleanup", &ProviderImpl::cleanup, pool))
     , m_abort(define("colza_abort", &ProviderImpl::abort, pool).disable_response())
+    , m_leave(define("colza_leave", &ProviderImpl::leave, pool).disable_response())
     , m_get_mona_addr(define("colza_get_mona_addr", &ProviderImpl::getMonaAddress, pool))
     {
         int ret;
@@ -408,8 +411,11 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                 state->iteration = iteration;
                 state->active = true;
             } else {
-                std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
-                m_num_active_pipelines -= 1;
+                {
+                    std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+                    m_num_active_pipelines -= 1;
+                }
+                m_pipelines_cv.notify_all();
             }
         }
         req.respond(result);
@@ -484,9 +490,12 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         } else {
             result = pipeline->cleanup(iteration);
             if(result.success()) {
-                std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
-                state->active = false;
-                m_num_active_pipelines -= 1;
+                {
+                    std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+                    state->active = false;
+                    m_num_active_pipelines -= 1;
+                }
+                m_pipelines_cv.notify_all();
             }
         }
         req.respond(result);
@@ -512,6 +521,21 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         } else {
             pipeline->abort(iteration);
             state->active = false;
+        }
+    }
+
+    void leave() {
+        spdlog::trace("[provider:{}] Received request to leave", id());
+        {
+            std::unique_lock<tl::mutex> lock(m_pipelines_mtx);
+            while(m_num_active_pipelines != 0) {
+                m_pipelines_cv.wait(lock);
+            }
+            spdlog::trace("[provider:{}] All the pipelines are inactive, provider can leave", id());
+            ssg_group_leave(m_gid);
+            spdlog::trace("[provider:{}] Left SSG group, calling finalize", id());
+            get_engine().finalize();
+            m_pipelines.clear();
         }
     }
 

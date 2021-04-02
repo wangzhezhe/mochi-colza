@@ -27,6 +27,8 @@ static std::string g_token;
 static std::string g_operation;
 static std::string g_log_level = "info";
 static std::string g_ssg_file;
+static std::string g_endpoint;
+static uint16_t    g_provider_id = 0;
 
 static void parse_command_line(int argc, char** argv);
 static uint32_t get_credentials_from_ssg_file();
@@ -54,14 +56,18 @@ int main(int argc, char** argv) {
         colza::Admin admin(engine);
 
         if(g_operation == "create") {
-            admin.createDistributedPipeline(g_ssg_file, 0, g_pipeline, g_type, g_config, g_library, g_token);
+            admin.createDistributedPipeline(g_ssg_file, g_provider_id, g_pipeline, g_type, g_config, g_library, g_token);
             spdlog::info("Created pipeline {}", g_pipeline);
         } else if(g_operation == "destroy") {
-            admin.destroyDistributedPipeline(g_ssg_file, 0, g_pipeline, g_token);
+            admin.destroyDistributedPipeline(g_ssg_file, g_provider_id, g_pipeline, g_token);
             spdlog::info("Destroyed pipeline {}", g_pipeline);
         } else if(g_operation == "shutdown") {
             admin.shutdownGroup(g_ssg_file);
             spdlog::info("Service shut down");
+        } else if(g_operation == "leave") {
+            if(!g_endpoint.empty()) {
+                admin.makeServerLeave(g_endpoint, g_provider_id);
+            }
         }
 
         // Any of the above functions may throw a colza::Exception
@@ -87,8 +93,10 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::ValueArg<std::string> configArg("c","config","Pipeline configuration", false,"","string");
         TCLAP::ValueArg<std::string> logLevel("v","verbose",
             "Log level (trace, debug, info, warning, error, critical, off)", false, "info", "string");
-        TCLAP::ValueArg<std::string> ssgFileArg("s","ssg-file","SSG file name", true, "","string");
-        std::vector<std::string> options = { "create", "destroy", "shutdown" };
+        TCLAP::ValueArg<std::string> ssgFileArg("s","ssg-file","SSG file name", false, "","string");
+        TCLAP::ValueArg<std::string> endpoint("e", "endpoint", "Server to contact", false, "", "string");
+        TCLAP::ValueArg<uint16_t> providerId("p", "provider-id", "Provider id", false, 0, "int");
+        std::vector<std::string> options = { "create", "destroy", "shutdown", "leave" };
         TCLAP::ValuesConstraint<std::string> allowedOptions(options);
         TCLAP::ValueArg<std::string> operationArg("x","exec","Operation to execute",true,"create",&allowedOptions);
         cmd.add(addressArg);
@@ -100,6 +108,8 @@ void parse_command_line(int argc, char** argv) {
         cmd.add(libraryArg);
         cmd.add(operationArg);
         cmd.add(ssgFileArg);
+        cmd.add(providerId);
+        cmd.add(endpoint);
         cmd.parse(argc, argv);
         g_address = addressArg.getValue();
         g_library = libraryArg.getValue();
@@ -111,6 +121,8 @@ void parse_command_line(int argc, char** argv) {
         g_log_level = logLevel.getValue();
         g_protocol = g_address.substr(0, g_address.find(":"));
         g_ssg_file = ssgFileArg.getValue();
+        g_provider_id = providerId.getValue();
+        g_endpoint = endpoint.getValue();
     } catch(TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);

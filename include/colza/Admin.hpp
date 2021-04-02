@@ -257,6 +257,28 @@ class Admin {
      */
     void shutdownServer(const std::string& address) const;
 
+    /**
+     * @brief Request the server to leave the group and shutdown
+     * by calling the "leave" RPC of a provider.
+     *
+     * @param address Address of the server.
+     * @param provider_id Provider id of the provider.
+     */
+    void makeServerLeave(const std::string& address, uint16_t provider_id) const;
+
+    /**
+     * @brief Request a set of servers, represented by their rank
+     * in an SSG group file, to leave the group and shutdown.
+     *
+     * @param ssg_file SSG group file name.
+     * @param ranks Ranks to shutdown.
+     * @param provider_id Provider id.
+     */
+    void makeServersLeave(
+        const std::string& ssg_file,
+        const std::vector<int>& ranks,
+        uint16_t provider_id) const;
+
     private:
 
     std::shared_ptr<AdminImpl> self;
