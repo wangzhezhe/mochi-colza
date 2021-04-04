@@ -24,6 +24,8 @@ static std::string g_log_level = "info";
 static std::string g_ssg_file;
 static uint64_t    g_num_iterations = 10;
 static uint64_t    g_wait_between_iterations = 2;
+static bool        g_no_stage = false;
+static bool        g_no_exec = false;
 
 static void parse_command_line(int argc, char** argv);
 static uint32_t get_credentials_from_ssg_file();
@@ -63,7 +65,9 @@ int main(int argc, char** argv) {
         // start iteration
         for(uint64_t iteration = 0; iteration < g_num_iterations; iteration++) {
 
+            spdlog::trace("Calling start({})", iteration);
             pipeline.start(iteration);
+            spdlog::trace("Done calling start({})", iteration);
 
             // create some data
             std::vector<double> mydata(32*54);
@@ -74,24 +78,28 @@ int main(int argc, char** argv) {
             std::vector<int64_t> offsets = { 0, 0 };
             auto type = colza::Type::FLOAT64;
 
-            spdlog::trace("Calling stage({})", iteration);
-
-            // stage the data at iteration 42
-            int32_t result;
-            pipeline.stage("mydata", iteration, rank,
+            // stage the data
+            if(!g_no_stage) {
+                spdlog::trace("Calling stage({})", iteration);
+                int32_t result;
+                pipeline.stage("mydata", iteration, rank,
                     dimensions, offsets,
                     type, mydata.data(),
                     &result);
-
-            spdlog::trace("Calling execute({})", iteration);
+                spdlog::trace("Done calling stage({})", iteration);
+            }
 
             // execute the pipeline
-            pipeline.execute(iteration);
-
-            spdlog::trace("Calling cleanup({})", iteration);
+            if(!g_no_exec) {
+                spdlog::trace("Calling execute({})", iteration);
+                pipeline.execute(iteration);
+                spdlog::trace("Done calling execute({})", iteration);
+            }
 
             // cleanup the pipeline
+            spdlog::trace("Calling cleanup({})", iteration);
             pipeline.cleanup(iteration);
+            spdlog::trace("Done calling cleanup({})", iteration);
 
             spdlog::trace("Iteration {} done", iteration);
 
@@ -123,15 +131,24 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::ValueArg<std::string> logLevel("v","verbose",
                 "Log level (trace, debug, info, warning, error, critical, off)", false, "info", "string");
         TCLAP::ValueArg<std::string> ssgFileArg("s","ssg-file","SSG file name", true, "","string");
+        TCLAP::ValueArg<unsigned> waitVal("w","wait","Wait time between iterations", true, 2,"int");
+        TCLAP::SwitchArg noStage("","no-stage","Do not stage any data", false);
+        TCLAP::SwitchArg noExecute("","no-execute","Do not execute the pipeline", false);
         cmd.add(addressArg);
         cmd.add(pipelineArg);
         cmd.add(logLevel);
         cmd.add(ssgFileArg);
+        cmd.add(noStage);
+        cmd.add(noExecute);
+        cmd.add(waitVal);
         cmd.parse(argc, argv);
         g_address = addressArg.getValue();
         g_pipeline = pipelineArg.getValue();
         g_log_level = logLevel.getValue();
         g_ssg_file = ssgFileArg.getValue();
+        g_no_stage = noStage.getValue();
+        g_no_exec = noExecute.getValue();
+        g_wait_between_iterations = waitVal.getValue();
     } catch(TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(-1);
