@@ -52,6 +52,8 @@ int main(int argc, char** argv) {
     // Initialize the thallium server
     tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, 0, &hii);
 
+    double t1, t2;
+
     try {
 
         // Initialize a Client
@@ -66,8 +68,10 @@ int main(int argc, char** argv) {
         for(uint64_t iteration = 0; iteration < g_num_iterations; iteration++) {
 
             spdlog::trace("Calling start({})", iteration);
+            t1 = MPI_Wtime();
             pipeline.start(iteration);
-            spdlog::trace("Done calling start({})", iteration);
+            t2 = MPI_Wtime();
+            spdlog::trace("Done calling start({}), took {} seconds", iteration, (t2-t1));
 
             // create some data
             std::vector<double> mydata(32*54);
