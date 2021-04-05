@@ -439,10 +439,12 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             result.value() = (int)ErrorCode::PIPELINE_NOT_ACTIVE;
             result.success() = false;
             result.error() = "Pipeline is not active";
+            spdlog::error("[provider:{}] Pipeline {} is not active", id(), pipeline_name);
         } else if(state->iteration != iteration) {
             result.value() = (int)ErrorCode::INVALID_ITERATION;
             result.success() = false;
             result.error() = "Invalid iteration";
+            spdlog::error("[provider:{}] Invalid iteration ({})", id(), iteration);
         } else {
             result = pipeline->stage(
                     sender_addr, dataset_name, iteration,
@@ -462,10 +464,12 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             result.value() = (int)ErrorCode::PIPELINE_NOT_ACTIVE;
             result.success() = false;
             result.error() = "Pipeline is not active";
+            spdlog::error("[provider:{}] Pipeline {} is not active", id(), pipeline_name);
         } else if(state->iteration != iteration) {
             result.value() = (int)ErrorCode::INVALID_ITERATION;
             result.success() = false;
             result.error() = "Invalid iteration";
+            spdlog::error("[provider:{}] Invalid iteration ({})", id(), iteration);
         } else {
             result = pipeline->execute(iteration);
         }
@@ -482,11 +486,13 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         if(!state->active) {
             result.value() = (int)ErrorCode::PIPELINE_NOT_ACTIVE;
             result.success() = false;
+            spdlog::error("[provider:{}] Pipeline {} is not active", id(), pipeline_name);
             result.error() = "Pipeline is not active";
         } else if(state->iteration != iteration) {
             result.value() = (int)ErrorCode::INVALID_ITERATION;
             result.success() = false;
             result.error() = "Invalid iteration";
+            spdlog::error("[provider:{}] Invalid iteration ({})", id(), iteration);
         } else {
             result = pipeline->cleanup(iteration);
             if(result.success()) {
