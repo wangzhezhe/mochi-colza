@@ -535,6 +535,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             {
                 std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
                 state->active = false;
+                state->iteration -= 1;
                 m_num_active_pipelines -= 1;
             }
             m_pipelines_cv.notify_all();
