@@ -131,7 +131,8 @@ void parse_command_line(int argc, char** argv) {
         TCLAP::ValueArg<std::string> logLevel("v","verbose",
                 "Log level (trace, debug, info, warning, error, critical, off)", false, "info", "string");
         TCLAP::ValueArg<std::string> ssgFileArg("s","ssg-file","SSG file name", true, "","string");
-        TCLAP::ValueArg<unsigned> waitVal("w","wait","Wait time between iterations", true, 2,"int");
+        TCLAP::ValueArg<unsigned> waitVal("w","wait","Wait time between iterations", false, 2, "int");
+        TCLAP::ValueArg<unsigned> numIterations("i","iterations","Number of iterations", false, 10, "int");
         TCLAP::SwitchArg noStage("","no-stage","Do not stage any data", false);
         TCLAP::SwitchArg noExecute("","no-execute","Do not execute the pipeline", false);
         cmd.add(addressArg);
@@ -141,6 +142,7 @@ void parse_command_line(int argc, char** argv) {
         cmd.add(noStage);
         cmd.add(noExecute);
         cmd.add(waitVal);
+        cmd.add(numIterations);
         cmd.parse(argc, argv);
         g_address = addressArg.getValue();
         g_pipeline = pipelineArg.getValue();
@@ -148,6 +150,7 @@ void parse_command_line(int argc, char** argv) {
         g_ssg_file = ssgFileArg.getValue();
         g_no_stage = noStage.getValue();
         g_no_exec = noExecute.getValue();
+        g_num_iterations = numIterations.getValue();
         g_wait_between_iterations = waitVal.getValue();
     } catch(TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
