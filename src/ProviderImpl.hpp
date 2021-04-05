@@ -514,12 +514,6 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         RequestResult<int32_t> result;
         FIND_PIPELINE(state);
         auto pipeline = state->pipeline;
-        if(!state->active || state->iteration != iteration) {
-            return;
-        } else {
-            pipeline->abort(iteration);
-            state->active = false;
-        }
         if(!state->active) {
             result.value() = (int)ErrorCode::PIPELINE_NOT_ACTIVE;
             result.success() = false;
