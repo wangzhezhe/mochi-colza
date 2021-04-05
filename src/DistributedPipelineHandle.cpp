@@ -89,29 +89,11 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
             std::vector<PipelineHandle*> started;
             started.reserve(num_pipelines);
             ok = true;
-            spdlog::trace("Sending a start command to pipelines, with group_hash = {}", self->m_group_hash);
+            spdlog::trace("Sending a start command to {} pipelines, with group_hash = {}", num_pipelines, self->m_group_hash);
 
             std::vector<tl::async_response> async_responses;
 
             for(auto& pipeline : self->m_pipelines) {
-#if 0
-                try {
-                    RequestResult<int32_t> result = start.on(pipeline.self->m_ph)(
-                            group_hash, pipeline.self->m_name, iteration);
-                    started.push_back(&pipeline);
-                    if(!result.success()) {
-                        ok = false;
-                        if(result.value() == (int)ErrorCode::INVALID_GROUP_HASH) {
-                            spdlog::warn("Invalid group hash detected, group view needs to be updated");
-                            retry = true;
-                        }
-                        break;
-                    }
-                } catch(const std::exception& ex) {
-                    ok = false;
-                    break;
-                }
-#endif
                 auto async_response = start.on(pipeline.self->m_ph).async(
                         group_hash, pipeline.self->m_name, iteration);
                 async_responses.push_back(std::move(async_response));
@@ -128,6 +110,7 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
                         retry = true;
                     }
                 } else {
+                    spdlog::debug("Pipeline started at {}", static_cast<std::string>(p.self->m_ph));
                     started.push_back(&p);
                 }
             }
@@ -138,12 +121,13 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
             if(!ok) { // one RPC failed to be sent, send "abort to the
                 for(auto pipeline : started) {
                     try {
+                        spdlog::debug("Sending abort message to pipeline");
                         auto async_response = abort.on(pipeline->self->m_ph).async(pipeline->self->m_name, iteration);
                         async_responses.push_back(std::move(async_response));
                     } catch(...) {
                         spdlog::error("Could not abort iteration on pipeline {} at address {}",
                                 pipeline->self->m_name,
-                                static_cast<std::string>(pipeline->self->m_name));
+                                static_cast<std::string>(pipeline->self->m_ph));
                     }
                 }
                 for(auto& a : async_responses) {
