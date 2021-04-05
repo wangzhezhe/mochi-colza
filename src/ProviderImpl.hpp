@@ -507,20 +507,12 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         req.respond(result);
     }
 
-    void abort(const std::string& pipeline_name,
+    void abort(const tl::request& req,
+               const std::string& pipeline_name,
                uint64_t iteration) {
         spdlog::trace("[provider:{}] Received abort request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
-        std::shared_ptr<PipelineState> state;
-        {
-            std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
-            auto it = m_pipelines.find(pipeline_name);
-            if(it == m_pipelines.end()) {
-                spdlog::error("[provider:{}] Pipeline {} not found", id(), pipeline_name);
-                return;
-            }
-            state = it->second;
-        }
+        FIND_PIPELINE(state);
         auto pipeline = state->pipeline;
         if(!state->active || state->iteration != iteration) {
             return;
@@ -528,6 +520,26 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             pipeline->abort(iteration);
             state->active = false;
         }
+        if(!state->active) {
+            result.value() = (int)ErrorCode::PIPELINE_NOT_ACTIVE;
+            result.success() = false;
+            spdlog::error("[provider:{}] Pipeline {} is not active", id(), pipeline_name);
+            result.error() = "Pipeline is not active";
+        } else if(state->iteration != iteration) {
+            result.value() = (int)ErrorCode::INVALID_ITERATION;
+            result.success() = false;
+            result.error() = "Invalid iteration";
+            spdlog::error("[provider:{}] Invalid iteration ({})", id(), iteration);
+        } else {
+            pipeline->abort(iteration);
+            {
+                std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+                state->active = false;
+                m_num_active_pipelines -= 1;
+            }
+            m_pipelines_cv.notify_all();
+        }
+        req.respond(result);
     }
 
     void leave() {
