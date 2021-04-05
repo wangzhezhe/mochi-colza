@@ -100,6 +100,7 @@ int main(int argc, char** argv) {
                 spdlog::trace("Done calling execute({})", iteration);
             }
 
+            sleep(g_wait_between_iterations);
             // cleanup the pipeline
             spdlog::trace("Calling cleanup({})", iteration);
             pipeline.cleanup(iteration);
