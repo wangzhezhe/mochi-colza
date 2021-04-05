@@ -110,7 +110,6 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
                         retry = true;
                     }
                 } else {
-                    spdlog::debug("Pipeline started at {}", static_cast<std::string>(p.self->m_ph));
                     started.push_back(&p);
                 }
             }
@@ -121,7 +120,6 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
             if(!ok) { // one RPC failed to be sent, send "abort to the
                 for(auto pipeline : started) {
                     try {
-                        spdlog::debug("Sending abort message to pipeline");
                         auto async_response = abort.on(pipeline->self->m_ph).async(pipeline->self->m_name, iteration);
                         async_responses.push_back(std::move(async_response));
                     } catch(...) {
