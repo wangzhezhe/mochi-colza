@@ -91,7 +91,10 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
             ok = true;
             spdlog::trace("Sending a start command to pipelines, with group_hash = {}", self->m_group_hash);
 
+            std::vector<tl::async_response> async_responses;
+
             for(auto& pipeline : self->m_pipelines) {
+#if 0
                 try {
                     RequestResult<int32_t> result = start.on(pipeline.self->m_ph)(
                             group_hash, pipeline.self->m_name, iteration);
@@ -108,19 +111,45 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
                     ok = false;
                     break;
                 }
+#endif
+                auto async_response = start.on(pipeline.self->m_ph).async(
+                        group_hash, pipeline.self->m_name, iteration);
+                async_responses.push_back(std::move(async_response));
             }
+
+            for(unsigned i = 0; i < async_responses.size(); i++) {
+                auto& a = async_responses[i];
+                auto& p = self->m_pipelines[i];
+                RequestResult<int32_t> result = a.wait();
+                if(!result.success()) {
+                    ok = false;
+                    if((retry == false) && (result.value() == (int)ErrorCode::INVALID_GROUP_HASH)) {
+                        spdlog::warn("Invalid group hash detected, group view needs to be updated");
+                        retry = true;
+                    }
+                } else {
+                    started.push_back(&p);
+                }
+            }
+
+            async_responses.clear();
 
             self->m_comm->bcast(&ok, sizeof(ok), 0);
             if(!ok) { // one RPC failed to be sent, send "abort to the
                 for(auto pipeline : started) {
                     try {
-                        abort.on(pipeline->self->m_ph)(pipeline->self->m_name, iteration);
+                        auto async_response = abort.on(pipeline->self->m_ph).async(pipeline->self->m_name, iteration);
+                        async_responses.push_back(std::move(async_response));
                     } catch(...) {
                         spdlog::error("Could not abort iteration on pipeline {} at address {}",
                                 pipeline->self->m_name,
                                 static_cast<std::string>(pipeline->self->m_name));
                     }
                 }
+                for(auto& a : async_responses) {
+                    a.wait();
+                }
+                async_responses.clear();
                 if(!first_attempt) {
                     // if it's the second attempt already, slow down querying the file
                     tl::thread::sleep(self->m_client->m_engine, 100);

@@ -104,7 +104,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     , m_stage(define("colza_stage", &ProviderImpl::stage, pool))
     , m_execute(define("colza_execute", &ProviderImpl::execute, pool))
     , m_cleanup(define("colza_cleanup", &ProviderImpl::cleanup, pool))
-    , m_abort(define("colza_abort", &ProviderImpl::abort, pool).disable_response())
+    , m_abort(define("colza_abort", &ProviderImpl::abort, pool))
     , m_leave(define("colza_leave", &ProviderImpl::leave, pool).disable_response())
     , m_get_mona_addr(define("colza_get_mona_addr", &ProviderImpl::getMonaAddress, pool))
     {

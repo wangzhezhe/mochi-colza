@@ -34,7 +34,7 @@ class ClientImpl {
     , m_stage(m_engine.define("colza_stage"))
     , m_execute(m_engine.define("colza_execute"))
     , m_cleanup(m_engine.define("colza_cleanup"))
-    , m_abort(m_engine.define("colza_abort").disable_response())
+    , m_abort(m_engine.define("colza_abort"))
     {}
 
     ClientImpl(margo_instance_id mid)
