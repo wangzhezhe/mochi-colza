@@ -85,13 +85,19 @@ void Admin::createDistributedPipeline(const std::string& ssg_file,
     if(ret != SSG_SUCCESS)
         throw Exception(ErrorCode::SSG_ERROR, "Could not observe SSG group from "s + ssg_file);
 
-    int group_size = ssg_get_group_size(gid);
+    int group_size = 0;
+    ret = ssg_get_group_size(gid, &group_size);
+    if(ret != SSG_SUCCESS)
+        throw Exception(ErrorCode::SSG_ERROR, "Could not get SSG group size");
+
     std::vector<tl::managed<tl::thread>> ults;
     for(int i = 0; i < group_size; i++) {
         ults.push_back(tl::xstream::self().make_thread(
                 [gid, this, i, provider_id, &name, &type, &config, &library, &token]() {
-            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, i);
-            hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+            ssg_member_id_t member_id = SSG_MEMBER_ID_INVALID;
+            ssg_get_group_member_id_from_rank(gid, i, &member_id);
+            hg_addr_t a = HG_ADDR_NULL;
+            ssg_get_group_member_addr(gid, member_id, &a);
             auto e = tl::endpoint(self->m_engine, a, false);
             createPipeline(static_cast<std::string>(e), provider_id, name, type, config, library, token);
         }));
@@ -118,12 +124,15 @@ void Admin::destroyDistributedPipeline(const std::string& ssg_file,
         throw Exception(ErrorCode::SSG_ERROR,
             "Could not observe SSG group from "s + ssg_file);
 
-    int group_size = ssg_get_group_size(gid);
+    int group_size = 0;
+    ssg_get_group_size(gid, &group_size);
     std::vector<tl::managed<tl::thread>> ults;
     for(int i = 0; i < group_size; i++) {
         ults.push_back(tl::xstream::self().make_thread([gid, this, i, provider_id, &name, &token]() {
-            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, i);
-            hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+            ssg_member_id_t member_id = SSG_MEMBER_ID_INVALID;
+            ssg_get_group_member_id_from_rank(gid, i, &member_id);
+            hg_addr_t a = HG_ADDR_NULL;
+            ssg_get_group_member_addr(gid, member_id, &a);
             auto e = tl::endpoint(self->m_engine, a, false);
             destroyPipeline(static_cast<std::string>(e), provider_id, name, token);
         }));
@@ -153,12 +162,15 @@ void Admin::shutdownGroup(const std::string& ssg_file) const {
         throw Exception(ErrorCode::SSG_ERROR,
             "Could not observe SSG group from "s + ssg_file);
 
-    int group_size = ssg_get_group_size(gid);
+    int group_size = 0;
+    ssg_get_group_size(gid, &group_size);
     std::vector<tl::managed<tl::thread>> ults;
     for(int i = 0; i < group_size; i++) {
         ults.push_back(tl::xstream::self().make_thread([gid, this, i]() {
-            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, i);
-            hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+            ssg_member_id_t member_id = SSG_MEMBER_ID_INVALID;
+            ssg_get_group_member_id_from_rank(gid, i, &member_id);
+            hg_addr_t a = HG_ADDR_NULL;
+            ssg_get_group_member_addr(gid, member_id, &a);
             auto e = tl::endpoint(self->m_engine, a, false);
             self->m_engine.shutdown_remote_engine(e);
         }));
@@ -192,12 +204,15 @@ void Admin::makeServersLeave(
         throw Exception(ErrorCode::SSG_ERROR,
             "Could not observe SSG group from "s + ssg_file);
 
-    int group_size = ssg_get_group_size(gid);
+    int group_size = 0;
+    ssg_get_group_size(gid, &group_size);
     for(auto rank : ranks) {
         if(rank < 0 || rank >= group_size)
             continue;
-        ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, rank);
-        hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+        ssg_member_id_t member_id = SSG_MEMBER_ID_INVALID;
+        ssg_get_group_member_id_from_rank(gid, rank, &member_id);
+        hg_addr_t a = HG_ADDR_NULL;
+        ssg_get_group_member_addr(gid, member_id, &a);
         auto ph = tl::provider_handle(self->m_engine, a, provider_id, false);
         self->m_leave.on(ph)();
     }

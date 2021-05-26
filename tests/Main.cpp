@@ -58,11 +58,13 @@ int main(int argc, char** argv) {
     auto self_addr = static_cast<std::string>(engine.self());
     std::vector<const char*> group_addr_str = { self_addr.c_str() };
     ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
-    ssg_group_id_t gid = ssg_group_create(engine.get_margo_instance(),
-                                          "mygroup",
-                                          group_addr_str.data(),
-                                          1, &group_config,
-                                          nullptr, nullptr);
+    ssg_group_id_t gid;
+    ssg_group_create(engine.get_margo_instance(),
+                     "mygroup",
+                     group_addr_str.data(),
+                     1, &group_config,
+                     nullptr, nullptr,
+                     &gid);
 
     // Create Mona instance
     mona_instance_t mona = mona_init("ofi+tcp", NA_TRUE, NULL);

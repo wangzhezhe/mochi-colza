@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
             spdlog::critical("Could not load group id from file");
             exit(-1);
         }
-        g_drc_credential = ssg_group_id_get_cred(gid);
+        ssg_group_id_get_cred(gid, &g_drc_credential);
         spdlog::trace("Credential id read from SSG file: {}", g_drc_credential);
         if(g_drc_credential != -1)
             cookie = get_credential_cookie(g_drc_credential);
@@ -86,11 +86,11 @@ int main(int argc, char** argv) {
         group_config.swim_suspect_timeout_periods = 3;
         group_config.swim_subgroup_member_count = 1;
         group_config.ssg_credential = g_drc_credential;
-        gid = ssg_group_create_mpi(engine.get_margo_instance(),
-                                   "mygroup",
-                                   MPI_COMM_WORLD,
-                                   &group_config,
-                                   nullptr, nullptr);
+        ssg_group_create_mpi(engine.get_margo_instance(),
+                             "mygroup",
+                             MPI_COMM_WORLD,
+                             &group_config,
+                             nullptr, nullptr, &gid);
     } else {
         // ssg_group_join will be called in the provider constructor
     }
@@ -213,7 +213,8 @@ void parse_command_line(int argc, char** argv) {
 
 void update_group_file(void* group_data, ssg_member_id_t, ssg_member_update_type_t) {
     ssg_group_id_t gid = reinterpret_cast<ssg_group_id_t>(group_data);
-    int r = ssg_get_group_self_rank(gid);
+    int r = -1;
+    ssg_get_group_self_rank(gid, &r);
     if(r != 0) return;
     int ret = ssg_group_id_store(g_ssg_file.c_str(), gid, SSG_ALL_MEMBERS);
     if(ret != SSG_SUCCESS) {

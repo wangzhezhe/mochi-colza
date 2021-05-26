@@ -12,7 +12,8 @@ namespace colza {
 
 inline static uint64_t ComputeGroupHash(ssg_group_id_t gid) {
     uint64_t hash = 0;
-    int size = ssg_get_group_size(gid);
+    int size = 0;
+    ssg_get_group_size(gid, &size);
     std::vector<ssg_member_id_t> member_ids(size);
     ssg_get_group_member_ids_from_range(gid, 0, size-1, member_ids.data());
     for(int i = 0; i < size; i++) {

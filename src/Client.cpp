@@ -100,11 +100,30 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
                 "Could not observe the SSG group from file "s + ssg_group_file);
 
         // get string addresses
-        int group_size = ssg_get_group_size(gid);
+        int group_size = 0;
+        ret = ssg_get_group_size(gid, &group_size);
+        if(ret != SSG_SUCCESS) {
+            throw Exception(ErrorCode::SSG_ERROR,
+                "Could not get group size"s);
+        }
         std::vector<char> packed_addresses(group_size*256, 0);
         for(int i = 0 ; i < group_size ; i++) {
-            ssg_member_id_t member_id = ssg_get_group_member_id_from_rank(gid, i);
-            hg_addr_t a = ssg_get_group_member_addr(gid, member_id);
+            ssg_member_id_t member_id = SSG_MEMBER_ID_INVALID;
+            ret = ssg_get_group_member_id_from_rank(gid, i, &member_id);
+            if(ret != SSG_SUCCESS) {
+                throw Exception(ErrorCode::SSG_ERROR,
+                    "Could not get member if from rank "
+                    "(ssg_get_group_member_id_from_rank returned "s
+                    + std::to_string(ret) + ")");
+            }
+            hg_addr_t a = HG_ADDR_NULL;
+            ret = ssg_get_group_member_addr(gid, member_id, &a);
+            if(ret != SSG_SUCCESS) {
+                throw Exception(ErrorCode::SSG_ERROR,
+                    "Could not get member address "
+                    "(ssg_get_group_member_addr returned "s
+                    + std::to_string(ret) + ")");
+            }
             auto addr = tl::endpoint(self->m_engine, a, false);
             strcpy(packed_addresses.data() + i*256, static_cast<std::string>(addr).c_str());
             try {

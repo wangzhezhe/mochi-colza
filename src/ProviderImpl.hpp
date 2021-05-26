@@ -566,7 +566,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     }
 
     na_addr_t _requestMonaAddressFromSSGMember(ssg_member_id_t member_id) {
-        hg_addr_t hg_addr = ssg_get_group_member_addr(m_gid, member_id);
+        hg_addr_t hg_addr = HG_ADDR_NULL;
+        ssg_get_group_member_addr(m_gid, member_id, &hg_addr);
         tl::provider_handle ph;
         try {
             ph = tl::provider_handle(get_engine(), hg_addr, get_provider_id(), false);
@@ -601,11 +602,30 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         // TODO we could speed up this function if the getMonaAddress RPC
         // were to piggy-back the addresses it already knows
         spdlog::trace("[provider:{}] Resolving MoNA addressed of SSG group", id());
-        auto self_id = ssg_get_self_id(get_engine().get_margo_instance());
-        auto self_rank = ssg_get_group_member_rank(m_gid, self_id);
-        auto group_size = ssg_get_group_size(m_gid);
+        ssg_member_id_t self_id = SSG_MEMBER_ID_INVALID;
+        int ret = ssg_get_self_id(get_engine().get_margo_instance(), &self_id);
+        if(ret != SSG_SUCCESS) {
+            throw Exception(ErrorCode::SSG_ERROR,
+                "ssg_get_self_id failed with error code "s +std::to_string(ret));
+        }
+        int self_rank = -1;
+        ret = ssg_get_group_member_rank(m_gid, self_id, &self_rank);
+        if(ret != SSG_SUCCESS) {
+            throw Exception(ErrorCode::SSG_ERROR,
+                "ssg_get_group_member_rank failed with error code "s +std::to_string(ret));
+        }
+        int group_size = 0;
+        ret = ssg_get_group_size(m_gid, &group_size);
+        if(ret != SSG_SUCCESS) {
+            throw Exception(ErrorCode::SSG_ERROR,
+                "ssg_get_group_size failed with error code "s +std::to_string(ret));
+        }
         std::vector<ssg_member_id_t> member_ids(group_size);
-        ssg_get_group_member_ids_from_range(m_gid, 0, group_size-1, member_ids.data());
+        ret = ssg_get_group_member_ids_from_range(m_gid, 0, group_size-1, member_ids.data());
+        if(ret != SSG_SUCCESS) {
+            throw Exception(ErrorCode::SSG_ERROR,
+                "ssg_get_group_member_ids_from_range failed with error code "s +std::to_string(ret));
+        }
         decltype(m_mona_addresses) tmp_addresses;
         for(int i = 0; i < group_size; i++) {
             int j = (self_rank + i) % group_size;
