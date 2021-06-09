@@ -473,8 +473,15 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             spdlog::error("[provider:{}] Invalid iteration ({})", id(), iteration);
         } else {
             result = pipeline->execute(iteration);
-            if(autoCleanup)
-                pipeline->cleanup(iteration);
+            if(result.success() && autoCleanup) {
+                result = pipeline->cleanup(iteration);
+                if(result.success()) {
+                    std::lock_guard<tl::mutex> lock(m_pipelines_mtx);
+                    state->active = false;
+                    m_num_active_pipelines -= 1;
+                }
+                m_pipelines_cv.notify_all();
+            }
         }
         req.respond(result);
     }
