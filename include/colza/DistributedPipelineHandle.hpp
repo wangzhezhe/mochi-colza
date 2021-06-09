@@ -157,10 +157,12 @@ class DistributedPipelineHandle {
      *
      * @param iteration Iteration of data on which to execute.
      * @param result Result.
+     * @param autoCleanup Whether to auto-cleanup after execution.
      * @param req Asynchronous request.
      */
     void execute(uint64_t iteration,
                  int32_t* result = nullptr,
+                 bool autoCleanup = false,
                  AsyncRequest* req = nullptr) const;
 
     /**

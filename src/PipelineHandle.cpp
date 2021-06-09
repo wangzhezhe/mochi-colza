@@ -184,6 +184,7 @@ void PipelineHandle::stage(const std::string& dataset_name,
 
 void PipelineHandle::execute(uint64_t iteration,
              int32_t* result,
+             bool autoCleanup,
              AsyncRequest* req) const {
     if(not self)
         throw Exception(ErrorCode::INVALID_INSTANCE,
@@ -192,14 +193,14 @@ void PipelineHandle::execute(uint64_t iteration,
     auto& ph  = self->m_ph;
     auto& pipeline_name = self->m_name;
     if(req == nullptr) { // synchronous call
-        RequestResult<int32_t> response = rpc.on(ph)(pipeline_name, iteration);
+        RequestResult<int32_t> response = rpc.on(ph)(pipeline_name, iteration, autoCleanup);
         if(response.success()) {
             if(result) *result = response.value();
         } else {
             throw Exception((ErrorCode)response.value(), response.error());
         }
     } else { // asynchronous call
-        auto async_response = rpc.on(ph).async(pipeline_name, iteration);
+        auto async_response = rpc.on(ph).async(pipeline_name, iteration, autoCleanup);
         auto async_request_impl =
             std::make_shared<AsyncRequestImpl>(std::move(async_response));
         async_request_impl->m_wait_callback =

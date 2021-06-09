@@ -455,7 +455,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
 
     void execute(const tl::request& req,
                  const std::string& pipeline_name,
-                 uint64_t iteration) {
+                 uint64_t iteration,
+                 bool autoCleanup) {
         spdlog::trace("[provider:{}] Received execute request for pipeline {}", id(), pipeline_name);
         RequestResult<int32_t> result;
         FIND_PIPELINE(state);
@@ -472,6 +473,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             spdlog::error("[provider:{}] Invalid iteration ({})", id(), iteration);
         } else {
             result = pipeline->execute(iteration);
+            if(autoCleanup)
+                pipeline->cleanup(iteration);
         }
         req.respond(result);
     }

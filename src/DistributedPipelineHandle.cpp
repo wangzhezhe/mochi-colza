@@ -216,6 +216,7 @@ void DistributedPipelineHandle::stage(const std::string& dataset_name,
 
 void DistributedPipelineHandle::execute(uint64_t iteration,
              int32_t* result,
+             bool autoCleanup,
              AsyncRequest* req) const {
     if(not self)
         throw Exception(ErrorCode::INVALID_INSTANCE,
@@ -234,7 +235,7 @@ void DistributedPipelineHandle::execute(uint64_t iteration,
     std::vector<tl::async_response> async_responses;
 
     for(auto& pipeline : self->m_pipelines) {
-        auto async_response = rpc.on(pipeline.self->m_ph).async(pipeline.self->m_name, iteration);
+        auto async_response = rpc.on(pipeline.self->m_ph).async(pipeline.self->m_name, iteration, autoCleanup);
         async_responses.push_back(std::move(async_response));
     }
 
