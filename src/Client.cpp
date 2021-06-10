@@ -106,6 +106,7 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
             throw Exception(ErrorCode::SSG_ERROR,
                 "Could not get group size"s);
         }
+       
         std::vector<char> packed_addresses(group_size*256, 0);
         for(int i = 0 ; i < group_size ; i++) {
             ssg_member_id_t member_id = SSG_MEMBER_ID_INVALID;
@@ -137,34 +138,46 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
         }
         // communicate group size to everybody
         comm->bcast(&group_size, sizeof(group_size), 0);
+
         // communicate addresses to everybody
         if(group_size != -1) {
             comm->bcast(packed_addresses.data(),
                     packed_addresses.size(), 0);
         }
+        spdlog::trace("PipelineHandle debug rank 0 group_size {} gid {} ", group_size, gid);
 
     } else {
         // get group size from rank 0
+        //std::cout << "PipelineHandle debug 1" << std::endl;
         int group_size;
         comm->bcast(&group_size, sizeof(group_size), 0);
         if(group_size == -1) {
             throw Exception(ErrorCode::SSG_ERROR,
                 "Master client could not resolve pipeline");
         }
+        spdlog::trace("PipelineHandle debug nonzero rank group_size {}", group_size);
+
+        //std::cout << "PipelineHandle debug 2" << std::endl;
         // get addresses from rank 0
         std::vector<char> packed_addresses(group_size*256);
         comm->bcast(packed_addresses.data(),
                     packed_addresses.size(), 0);
+        //std::cout << "PipelineHandle debug 3" << std::endl;
         // create pipelines
         for(int i = 0; i < group_size; i++) {
             char* addr = packed_addresses.data() + i*256;
             auto pipeline = makePipelineHandle(addr, provider_id, pipeline_name, false);
             pipelines.push_back(std::move(pipeline));
         }
-    }
+        //std::cout << "PipelineHandle debug 4" << std::endl;
 
+    }
+    
+    //for the zero process the gid should be a valid one
     auto impl = std::make_shared<DistributedPipelineHandleImpl>(
             comm, pipeline_name, self, gid, ssg_group_file, provider_id, std::move(pipelines));
+
+    spdlog::trace("final gid {} hash value {}", gid, impl->m_group_hash);
 
     return DistributedPipelineHandle(std::move(impl));
 }

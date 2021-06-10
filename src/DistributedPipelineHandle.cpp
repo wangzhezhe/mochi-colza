@@ -59,6 +59,7 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
     if(not self)
         throw Exception(ErrorCode::INVALID_INSTANCE,
             "Invalid colza::DistributedPipelineHandle object");
+    spdlog::trace("iteration {} start debug 1", iteration);
     self->m_comm->barrier();
     int my_rank = self->m_comm->rank();
 
@@ -68,17 +69,24 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
     bool ok = false;
     bool retry = true;
     bool first_attempt = true;
+    spdlog::trace("iteration {} start debug 2", iteration);
+    
+    spdlog::trace("iteration {} Updating view of SSG group", iteration);
+    auto new_dist_pipeline_temp = Client(self->m_client).makeDistributedPipelineHandle(
+            self->m_comm, self->m_ssg_group_file, self->m_provider_id,
+            self->m_name, false);
+    self=std::move(new_dist_pipeline_temp.self);
 
     if(my_rank == 0) {
 
         while(retry) {
-
+            //debug, try to updating the ssg view anyway since maybe the process can leave before the start call
             if(!first_attempt) {
-                spdlog::trace("Updating view of SSG group");
+                spdlog::trace("iteration {} first_attempt updating view of SSG group", iteration);
                 auto new_dist_pipeline = Client(self->m_client).makeDistributedPipelineHandle(
-                        self->m_comm, self->m_ssg_group_file, self->m_provider_id,
+                       self->m_comm, self->m_ssg_group_file, self->m_provider_id,
                         self->m_name, false);
-                self = std::move(new_dist_pipeline.self);
+                self=std::move(new_dist_pipeline.self);
             }
 
             retry = false;
@@ -89,20 +97,35 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
             std::vector<PipelineHandle*> started;
             started.reserve(num_pipelines);
             ok = true;
-            spdlog::trace("Sending a start command to {} pipelines, with group_hash = {}", num_pipelines, self->m_group_hash);
-
-            std::vector<tl::async_response> async_responses;
+            spdlog::trace("iteration {} Sending a start command to {} pipelines, with group_hash = {}", iteration, num_pipelines, self->m_group_hash);
+        
+            //do not use async here
+            //std::vector<tl::async_response> async_responses;
 
             for(auto& pipeline : self->m_pipelines) {
-                auto async_response = start.on(pipeline.self->m_ph).async(
-                        group_hash, pipeline.self->m_name, iteration);
-                async_responses.push_back(std::move(async_response));
-            }
+                //auto async_response = start.on(pipeline.self->m_ph).async(
+                //        group_hash, pipeline.self->m_name, iteration);
+                //async_responses.push_back(std::move(async_response));
+                RequestResult<int32_t> result = start.on(pipeline.self->m_ph)(group_hash, pipeline.self->m_name, iteration);
 
+                if(!result.success()) {
+                    ok = false;
+                    if((retry == false) && (result.value() == (int)ErrorCode::INVALID_GROUP_HASH)) {
+                        spdlog::warn("Invalid group hash detected, group view needs to be updated");
+                        retry = true;
+                    }
+                } else {
+                    started.push_back(&pipeline);
+                }
+            }
+            
+            /*
             for(unsigned i = 0; i < async_responses.size(); i++) {
                 auto& a = async_responses[i];
                 auto& p = self->m_pipelines[i];
+                spdlog::trace("iteration {} total response size {} current index {}",iteration, async_responses.size(), i);
                 RequestResult<int32_t> result = a.wait();
+                spdlog::trace("iteration {} index {} wait finish", iteration, i);
                 if(!result.success()) {
                     ok = false;
                     if((retry == false) && (result.value() == (int)ErrorCode::INVALID_GROUP_HASH)) {
@@ -116,22 +139,26 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
 
             async_responses.clear();
 
+            spdlog::info("iteration {} async_responses finish clear",iteration);
+            */
+
             self->m_comm->bcast(&ok, sizeof(ok), 0);
             if(!ok) { // one RPC failed to be sent, send "abort to the
+                spdlog::trace("start not ok section");
                 for(auto pipeline : started) {
                     try {
-                        auto async_response = abort.on(pipeline->self->m_ph).async(pipeline->self->m_name, iteration);
-                        async_responses.push_back(std::move(async_response));
+                        abort.on(pipeline->self->m_ph)(pipeline->self->m_name, iteration);
+                        //async_responses.push_back(std::move(async_response));
                     } catch(...) {
                         spdlog::error("Could not abort iteration on pipeline {} at address {}",
                                 pipeline->self->m_name,
                                 static_cast<std::string>(pipeline->self->m_ph));
                     }
                 }
-                for(auto& a : async_responses) {
-                    a.wait();
-                }
-                async_responses.clear();
+                //for(auto& a : async_responses) {
+                //    a.wait();
+                //}
+                //async_responses.clear();
                 if(!first_attempt) {
                     // if it's the second attempt already, slow down querying the file
                     tl::thread::sleep(self->m_client->m_engine, 100);
@@ -142,14 +169,25 @@ void DistributedPipelineHandle::start(uint64_t iteration) {
         }
 
     } else { // non-0 ranks
+        // TODO add condition here, if we removed sth, then update it
 
+
+        spdlog::trace("iteration {} start debug 3", iteration);
         self->m_comm->bcast(&ok, sizeof(ok), 0);
+        spdlog::trace("iteration {} non-0 debug 4 bcast 1", iteration);
+        
+        //update client when there is inconsistency, is it possible that only this part is called?
         while(not ok) {
+            spdlog::trace("iteration {} non-0 debug 5", iteration);
             auto new_dist_pipeline = Client(self->m_client).makeDistributedPipelineHandle(
                 self->m_comm, self->m_ssg_group_file, self->m_provider_id,
                 self->m_name, false);
+            spdlog::trace("iteration {} non-0 debug 6", iteration);
             self = std::move(new_dist_pipeline.self);
+            spdlog::trace("iteration {} non-0 debug 7", iteration);
             self->m_comm->bcast(&ok, sizeof(ok), 0);
+            spdlog::trace("iteration {} non-0 debug 8 bcast 2", iteration);
+
         }
     }
 }

@@ -47,7 +47,7 @@ class DistributedPipelineHandleImpl {
     , m_gid(gid)
     , m_provider_id(provider_id) {
         if(gid != SSG_GROUP_ID_INVALID)
-            m_group_hash = ComputeGroupHash(gid);
+            this->m_group_hash = ComputeGroupHash(gid);
     }
 
     DistributedPipelineHandleImpl(
@@ -66,7 +66,7 @@ class DistributedPipelineHandleImpl {
     , m_gid(gid)
     , m_provider_id(provider_id) {
         if(gid != SSG_GROUP_ID_INVALID)
-            m_group_hash = ComputeGroupHash(gid);
+            this->m_group_hash = ComputeGroupHash(gid);
     }
 
     ~DistributedPipelineHandleImpl() {

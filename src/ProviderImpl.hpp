@@ -119,6 +119,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                     std::to_string(ret) + ")");
             }
         } else {
+            // when the server addr is updated, call this
             ssg_group_add_membership_update_callback(
                     m_gid, &ProviderImpl::membershipUpdate,
                     static_cast<void*>(this));
@@ -158,8 +159,9 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         m_cleanup.deregister();
         m_abort.deregister();
         m_pipelines.clear();
+        //tell the ssg to not call the callback anymore
         ssg_group_remove_membership_update_callback(
-                m_gid, &ProviderImpl::membershipUpdate,
+               m_gid, &ProviderImpl::membershipUpdate,
                 static_cast<void*>(this));
         {
             std::lock_guard<tl::mutex> lock(m_mona_mtx);
@@ -580,6 +582,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         ssg_get_group_member_addr(m_gid, member_id, &hg_addr);
         tl::provider_handle ph;
         try {
+            spdlog::trace("_requestMonaAddressFromSSGMember member_id {} hg_addr {}", member_id, std::string(hg_addr));
             ph = tl::provider_handle(get_engine(), hg_addr, get_provider_id(), false);
         } catch(const std::exception& e) {
             spdlog::critical("Could not create provider handle from address to member {}: {}",
