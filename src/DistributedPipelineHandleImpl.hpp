@@ -20,7 +20,7 @@ class DistributedPipelineHandleImpl {
 
     public:
 
-    const ClientCommunicator*   m_comm = nullptr;
+    ClientCommunicator*   m_comm = nullptr;
     std::string                 m_name;
     std::shared_ptr<ClientImpl> m_client;
     HashFunction                m_hash = [](const std::string&, uint64_t, uint64_t block_id){
@@ -34,7 +34,7 @@ class DistributedPipelineHandleImpl {
     uint16_t                    m_provider_id;
 
     DistributedPipelineHandleImpl(
-        const ClientCommunicator* comm,
+        ClientCommunicator* comm,
         const std::string& name,
         const std::shared_ptr<ClientImpl>& client,
         std::string ssg_group_file,
@@ -47,11 +47,11 @@ class DistributedPipelineHandleImpl {
     , m_gid(gid)
     , m_provider_id(provider_id) {
         if(gid != SSG_GROUP_ID_INVALID)
-            m_group_hash = ComputeGroupHash(gid);
+            this->m_group_hash = ComputeGroupHash(gid);
     }
 
     DistributedPipelineHandleImpl(
-        const ClientCommunicator* comm,
+        ClientCommunicator* comm,
         const std::string& name,
         const std::shared_ptr<ClientImpl>& client,
         ssg_group_id_t gid,
@@ -66,7 +66,7 @@ class DistributedPipelineHandleImpl {
     , m_gid(gid)
     , m_provider_id(provider_id) {
         if(gid != SSG_GROUP_ID_INVALID)
-            m_group_hash = ComputeGroupHash(gid);
+            this->m_group_hash = ComputeGroupHash(gid);
     }
 
     ~DistributedPipelineHandleImpl() {

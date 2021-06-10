@@ -109,7 +109,7 @@ class Client {
      * @return a DistributedPipelineHandle instance.
      */
     DistributedPipelineHandle makeDistributedPipelineHandle(
-            const ClientCommunicator* comm,
+            ClientCommunicator* comm,
             const std::string& ssg_group_file,
             uint16_t provider_id,
             const std::string& pipeline_name,
