@@ -64,6 +64,8 @@ set_target_properties (colza-admin
     PROPERTIES VERSION ${COLZA_VERSION}
     SOVERSION ${COLZA_VERSION_MAJOR})
 
+# dynamic sim libraray
+
 if (${ENABLE_BEDROCK})
 # bedrock module libraries
 add_library (colza-bedrock-module ${module-src-files})

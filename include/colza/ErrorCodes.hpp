@@ -26,6 +26,7 @@ enum class ErrorCode : int32_t {
     MONA_ERROR              = -12,
     PIPELINE_CREATE_ERROR   = -13,
     INVALID_GROUP_HASH      = -14,
+    PROCESS_IS_ACTIVE           = -15,
     OTHER_ERROR             = -255
 };
 
