@@ -632,7 +632,6 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
     void _membershipUpdate(ssg_member_id_t member_id,
                            ssg_member_update_type_t update_type) {
         spdlog::trace("[provider:{}] Member {} updated", id(), member_id);
-        m_group_hash = UpdateGroupHash(m_group_hash, member_id);
         spdlog::trace("[provider:{}] Group hash was updated to {}", id(), m_group_hash);
         // TODO use the provider's pool instead of self ES
         tl::xstream::self().make_thread([this, member_id, update_type]() {
@@ -665,6 +664,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                 auto& state = p.second;
                 state->pipeline->updateMonaAddresses(m_mona, addresses);
             }
+            m_group_hash = UpdateGroupHash(m_group_hash, member_id);
         }
 
         }, tl::anonymous());
