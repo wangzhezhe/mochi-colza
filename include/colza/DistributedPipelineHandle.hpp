@@ -6,7 +6,6 @@
 #ifndef __COLZA_DISTRIBUTED_PIPELINE_HANDLE_HPP
 #define __COLZA_DISTRIBUTED_PIPELINE_HANDLE_HPP
 
-#include <mpi.h>
 #include <thallium.hpp>
 #include <colza/Types.hpp>
 #include <colza/AsyncRequest.hpp>

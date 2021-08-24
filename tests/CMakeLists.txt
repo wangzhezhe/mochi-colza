@@ -1,7 +1,7 @@
 include_directories(../include)
 
 add_library(colza-test Main.cpp)
-target_link_libraries(colza-test cppunit colza-server colza-admin colza-client)
+target_link_libraries(colza-test PkgConfig::cppunit colza-server colza-admin colza-client)
 
 add_executable(AdminTest AdminTest.cpp)
 target_link_libraries(AdminTest colza-test)

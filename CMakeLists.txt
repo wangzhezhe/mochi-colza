@@ -70,7 +70,7 @@ set (COLZA_VERSION
 
 add_subdirectory (src)
 if(${ENABLE_TESTS})
-  find_package (CppUnit REQUIRED)
+  pkg_check_modules (cppunit REQUIRED IMPORTED_TARGET cppunit)
   add_subdirectory (tests)
 endif(${ENABLE_TESTS})
 if(${ENABLE_EXAMPLES})
