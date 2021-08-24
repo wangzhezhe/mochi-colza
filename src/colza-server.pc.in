@@ -7,6 +7,6 @@ Name: colza-server
 Description: <insert description here>
 Version: @COLZA_VERSION@
 
-Requires: thallium nlohmann_json spdlog ssg
+Requires: thallium nlohmann_json spdlog ssg mona
 Libs: -L${libdir} @SERVER_PRIVATE_LIBS@ -lstdc++
 Cflags: -I${includedir}
