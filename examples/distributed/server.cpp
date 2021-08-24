@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
         // Create SSG group using MPI
         ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
         group_config.swim_period_length_ms = g_swim_period_ms;
-        group_config.swim_suspect_timeout_periods = 3;
+        group_config.swim_suspect_timeout_periods = 1000;
         group_config.swim_subgroup_member_count = 1;
         group_config.ssg_credential = g_drc_credential;
         ssg_group_create_mpi(engine.get_margo_instance(),
