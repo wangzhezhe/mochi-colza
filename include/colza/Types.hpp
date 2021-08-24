@@ -8,17 +8,22 @@
 
 namespace colza {
 
+#define COLZA_TYPES \
+    X(INT8)         \
+    X(UINT8)        \
+    X(INT16)        \
+    X(UINT16)       \
+    X(INT32)        \
+    X(UINT32)       \
+    X(INT64)        \
+    X(UINT64)       \
+    X(FLOAT32)      \
+    X(FLOAT64)      \
+
 enum class Type : uint32_t {
-    INT8,
-    UINT8,
-    INT16,
-    UINT16,
-    INT32,
-    UINT32,
-    INT64,
-    UINT64,
-    FLOAT32,
-    FLOAT64
+#define X(t) t,
+    COLZA_TYPES
+#undef X
 };
 
 }
