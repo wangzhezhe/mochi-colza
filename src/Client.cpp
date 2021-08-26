@@ -92,7 +92,7 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
         int ret = ssg_group_id_load(ssg_group_file.c_str(), &num_addrs, &gid);
         if(ret != SSG_SUCCESS)
             throw Exception(ErrorCode::SSG_ERROR,
-                "Could not open SSG group file "s + ssg_group_file);
+                "Could not open SSG group file "s + ssg_group_file + " (error code is " + std::to_string(ret) + ")");
         auto mid = self->m_engine.get_margo_instance();
         ret = ssg_group_observe(mid, gid);
         if(ret != SSG_SUCCESS)
