@@ -633,6 +633,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         std::vector<ssg_member_id_t> member_ids(group_size);
         ret = ssg_get_group_member_ids_from_range(m_gid, 0, group_size-1, member_ids.data());
         if(ret != SSG_SUCCESS) {
+            spdlog::error("ssg_get_group_member_ids_from_range(gid, 0, {}, data) failed", group_size-1);
             throw Exception(ErrorCode::SSG_ERROR,
                 "ssg_get_group_member_ids_from_range failed with error code "s +std::to_string(ret));
         }
