@@ -94,10 +94,10 @@ DistributedPipelineHandle Client::makeDistributedPipelineHandle(
             throw Exception(ErrorCode::SSG_ERROR,
                 "Could not open SSG group file "s + ssg_group_file + " (error code is " + std::to_string(ret) + ")");
         auto mid = self->m_engine.get_margo_instance();
-        ret = ssg_group_observe(mid, gid);
+        ret = ssg_group_refresh(mid, gid);
         if(ret != SSG_SUCCESS)
             throw Exception(ErrorCode::SSG_ERROR,
-                "Could not observe the SSG group from file "s + ssg_group_file);
+                "Could not refresh the SSG group from file "s + ssg_group_file);
 
         // get string addresses
         int group_size = 0;

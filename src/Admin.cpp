@@ -81,9 +81,9 @@ void Admin::createDistributedPipeline(const std::string& ssg_file,
     if(ret != SSG_SUCCESS)
         throw Exception(ErrorCode::SSG_ERROR, "Could not open SSG file "s + ssg_file);
 
-    ret = ssg_group_observe(self->m_engine.get_margo_instance(), gid);
+    ret = ssg_group_refresh(self->m_engine.get_margo_instance(), gid);
     if(ret != SSG_SUCCESS)
-        throw Exception(ErrorCode::SSG_ERROR, "Could not observe SSG group from "s + ssg_file);
+        throw Exception(ErrorCode::SSG_ERROR, "Could not refresh SSG group from "s + ssg_file);
 
     int group_size = 0;
     ret = ssg_get_group_size(gid, &group_size);
@@ -105,7 +105,7 @@ void Admin::createDistributedPipeline(const std::string& ssg_file,
     for(auto& ult : ults) {
         ult->join();
     }
-    ssg_group_unobserve(gid);
+    ssg_group_destroy(gid);
 }
 
 void Admin::destroyDistributedPipeline(const std::string& ssg_file,
@@ -119,10 +119,10 @@ void Admin::destroyDistributedPipeline(const std::string& ssg_file,
         throw Exception(ErrorCode::SSG_ERROR,
             "Could not open SSG file "s + ssg_file);
 
-    ret = ssg_group_observe(self->m_engine.get_margo_instance(), gid);
+    ret = ssg_group_refresh(self->m_engine.get_margo_instance(), gid);
     if(ret != SSG_SUCCESS)
         throw Exception(ErrorCode::SSG_ERROR,
-            "Could not observe SSG group from "s + ssg_file);
+            "Could not refresh SSG group from "s + ssg_file);
 
     int group_size = 0;
     ssg_get_group_size(gid, &group_size);
@@ -141,7 +141,7 @@ void Admin::destroyDistributedPipeline(const std::string& ssg_file,
         ult->join();
     }
 
-    ssg_group_unobserve(gid);
+    ssg_group_destroy(gid);
 }
 
 void Admin::shutdownServer(const std::string& address) const {
@@ -157,10 +157,10 @@ void Admin::shutdownGroup(const std::string& ssg_file) const {
         throw Exception(ErrorCode::SSG_ERROR,
             "Could not open SSG file "s + ssg_file);
 
-    ret = ssg_group_observe(self->m_engine.get_margo_instance(), gid);
+    ret = ssg_group_refresh(self->m_engine.get_margo_instance(), gid);
     if(ret != SSG_SUCCESS)
         throw Exception(ErrorCode::SSG_ERROR,
-            "Could not observe SSG group from "s + ssg_file);
+            "Could not refresh SSG group from "s + ssg_file);
 
     int group_size = 0;
     ssg_get_group_size(gid, &group_size);
@@ -179,7 +179,7 @@ void Admin::shutdownGroup(const std::string& ssg_file) const {
         ult->join();
     }
 
-    ssg_group_unobserve(gid);
+    ssg_group_destroy(gid);
 }
 
 void Admin::makeServerLeave(const std::string& address, uint16_t provider_id) const {
@@ -199,10 +199,10 @@ void Admin::makeServersLeave(
         throw Exception(ErrorCode::SSG_ERROR,
             "Could not open SSG file "s + ssg_file);
 
-    ret = ssg_group_observe(self->m_engine.get_margo_instance(), gid);
+    ret = ssg_group_refresh(self->m_engine.get_margo_instance(), gid);
     if(ret != SSG_SUCCESS)
         throw Exception(ErrorCode::SSG_ERROR,
-            "Could not observe SSG group from "s + ssg_file);
+            "Could not refresh SSG group from "s + ssg_file);
 
     int group_size = 0;
     ssg_get_group_size(gid, &group_size);
@@ -217,7 +217,7 @@ void Admin::makeServersLeave(
         self->m_leave.on(ph)();
     }
 
-    ssg_group_unobserve(gid);
+    ssg_group_destroy(gid);
 }
 
 }

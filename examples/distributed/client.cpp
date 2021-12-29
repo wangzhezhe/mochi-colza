@@ -36,8 +36,6 @@ int main(int argc, char** argv) {
 
     MPI_Init(&argc, &argv);
 
-    ssg_init();
-
     colza::MPIClientCommunicator comm(MPI_COMM_WORLD);
     int rank = comm.rank();
 
@@ -51,6 +49,8 @@ int main(int argc, char** argv) {
 
     // Initialize the thallium server
     tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, 0, &hii);
+
+    ssg_init();
 
     double t1, t2;
 
@@ -115,12 +115,11 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
-    spdlog::trace("Finalizing engine");
-
-    engine.finalize();
-
     spdlog::trace("Finalizing SSG");
     ssg_finalize();
+
+    spdlog::trace("Finalizing engine");
+    engine.finalize();
 
     spdlog::trace("Finalizing MPI");
     MPI_Finalize();

@@ -40,15 +40,9 @@ int main(int argc, char** argv) {
 
     // Initialize MPI
     MPI_Init(&argc, &argv);
-    int rank;
+    int rank, ret;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    // Initialize SSG
-    int ret = ssg_init();
-    if(ret != SSG_SUCCESS) {
-        spdlog::critical("Could not initialize SSG");
-        exit(-1);
-    }
     ssg_group_id_t gid;
 
     uint32_t cookie = 0;
@@ -57,13 +51,11 @@ int main(int argc, char** argv) {
         spdlog::trace("Credential id is {}", g_drc_credential);
         cookie = get_credential_cookie(g_drc_credential);
     } else {
-        int num_addrs = SSG_ALL_MEMBERS;
-        ret = ssg_group_id_load(g_ssg_file.c_str(), &num_addrs, &gid);
+        ret = ssg_get_group_cred_from_file(g_ssg_file.c_str(), &g_drc_credential);
         if(ret != SSG_SUCCESS) {
-            spdlog::critical("Could not load group id from file");
+            spdlog::critical("Could not get credentials from SSG file");
             exit(-1);
         }
-        ssg_group_id_get_cred(gid, &g_drc_credential);
         spdlog::trace("Credential id read from SSG file: {}", g_drc_credential);
         if(g_drc_credential != -1)
             cookie = get_credential_cookie(g_drc_credential);
@@ -79,6 +71,13 @@ int main(int argc, char** argv) {
     tl::engine engine(g_address, THALLIUM_SERVER_MODE, false, 1, &hii);
     engine.enable_remote_shutdown();
 
+    // Initialize SSG
+    ret = ssg_init();
+    if(ret != SSG_SUCCESS) {
+        spdlog::critical("Could not initialize SSG");
+        exit(-1);
+    }
+
     if(!g_join) {
         // Create SSG group using MPI
         ssg_group_config_t group_config = SSG_GROUP_CONFIG_INITIALIZER;
@@ -86,12 +85,22 @@ int main(int argc, char** argv) {
         group_config.swim_suspect_timeout_periods = 1000;
         group_config.swim_subgroup_member_count = 1;
         group_config.ssg_credential = g_drc_credential;
-        ssg_group_create_mpi(engine.get_margo_instance(),
-                             "mygroup",
-                             MPI_COMM_WORLD,
-                             &group_config,
-                             nullptr, nullptr, &gid);
+        ret = ssg_group_create_mpi(engine.get_margo_instance(),
+                                   "mygroup",
+                                   MPI_COMM_WORLD,
+                                   &group_config,
+                                   nullptr, nullptr, &gid);
+        if(ret != SSG_SUCCESS) {
+            spdlog::critical("Could not create SSG group from MPI");
+            exit(-1);
+        }
     } else {
+        int num_addrs = SSG_ALL_MEMBERS;
+        ret = ssg_group_id_load(g_ssg_file.c_str(), &num_addrs, &gid);
+        if(ret != SSG_SUCCESS) {
+            spdlog::critical("Could not load SSG group from {}", g_ssg_file);
+            exit(-1);
+        }
         // ssg_group_join will be called in the provider constructor
     }
     engine.push_prefinalize_callback([](){
