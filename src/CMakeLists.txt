@@ -30,6 +30,7 @@ target_link_libraries (colza-server
     thallium
     PkgConfig::SSG
     nlohmann_json::nlohmann_json
+    spdlog::spdlog
     PkgConfig::MONA)
 target_include_directories (colza-server PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories (colza-server BEFORE PUBLIC
@@ -42,7 +43,7 @@ set_target_properties (colza-server
 
 # client library
 add_library (colza-client ${client-src-files})
-target_link_libraries (colza-client PkgConfig::SSG thallium MPI::MPI_C)
+target_link_libraries (colza-client PkgConfig::SSG thallium MPI::MPI_C spdlog::spdlog)
 target_include_directories (colza-client PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories (colza-client BEFORE PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>)
@@ -54,7 +55,7 @@ set_target_properties (colza-client
 
 # admin library
 add_library (colza-admin ${admin-src-files})
-target_link_libraries (colza-admin PkgConfig::SSG thallium nlohmann_json::nlohmann_json)
+target_link_libraries (colza-admin PkgConfig::SSG thallium nlohmann_json::nlohmann_json spdlog::spdlog)
 target_include_directories (colza-admin PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories (colza-admin BEFORE PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>)

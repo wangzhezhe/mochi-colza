@@ -8,6 +8,8 @@
 #include <spdlog/spdlog.h>
 #include <tclap/CmdLine.h>
 #include <iostream>
+#include <cstdlib>
+#include <unistd.h>
 #include <ssg.h>
 #include <mpi.h>
 #ifdef COLZA_ENABLE_DRC

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <unistd.h>
 #include <mpi.h>
 #include <ssg-mpi.h>
 #include <spdlog/spdlog.h>
