@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
     na_addr_t mona_addr;
     mona_addr_self(mona, &mona_addr);
     std::vector<char> mona_addr_buf(256);
-    na_size_t mona_addr_size = 256;
+    size_t mona_addr_size = 256;
     mona_addr_to_string(mona, mona_addr_buf.data(), &mona_addr_size, mona_addr);
     spdlog::debug("MoNA address is {}", mona_addr_buf.data());
     mona_addr_free(mona, mona_addr);

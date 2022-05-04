@@ -133,7 +133,7 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
                 throw Exception(ErrorCode::MONA_ERROR,
                     "Could not get address from MoNA");
             char buf[256];
-            na_size_t buf_size = 256;
+            size_t buf_size = 256;
             ret = mona_addr_to_string(m_mona, buf, &buf_size, my_mona_addr);
             mona_addr_free(m_mona, my_mona_addr);
             if(ret != NA_SUCCESS) {
