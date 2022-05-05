@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
     }
 
     // Create Mona instance
-    mona_instance_t mona = mona_init_thread(g_address.c_str(), NA_TRUE, &hii.na_init_info, NA_TRUE);
+    mona_instance_t mona = mona_init_thread(g_address.c_str(), true, &hii.na_init_info, true);
 
     // Print MoNA address for information
     na_addr_t mona_addr;

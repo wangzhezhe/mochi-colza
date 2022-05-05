@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
                      &gid);
 
     // Create Mona instance
-    mona_instance_t mona = mona_init("ofi+tcp", NA_TRUE, NULL);
+    mona_instance_t mona = mona_init("ofi+tcp", true, NULL);
 
     // Initialize the Sonata provider
     colza::Provider provider(engine, gid, false, mona);
