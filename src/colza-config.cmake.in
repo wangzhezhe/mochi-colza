@@ -14,6 +14,7 @@ include (CMakeFindDependencyMacro)
 find_dependency (PkgConfig)
 pkg_check_modules (MONA REQUIRED IMPORTED_TARGET mona)
 pkg_check_modules (SSG REQUIRED IMPORTED_TARGET ssg)
+find_dependency (spdlog)
 find_dependency (nlohmann_json)
 find_dependency (thallium)
 
