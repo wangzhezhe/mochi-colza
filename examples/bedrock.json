@@ -8,7 +8,7 @@
     "ssg": [
         {
             "name": "colza_ssg_group",
-            "bootstrap": "join",
+            "bootstrap": "init|join",
             "group_file" : "colza.ssg"
         }
     ],
