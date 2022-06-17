@@ -28,7 +28,7 @@ class ColzaFactory : public bedrock::AbstractServiceFactory {
             return nullptr;
         }
         ssg_group_id_t gid = reinterpret_cast<ssg_group_id_t>(it->second[0].handle);
-        it = args.dependencies.find("mona");
+        it = args.dependencies.find("mona_instance");
         if(it == args.dependencies.end()) {
             // this should not happen if Bedrock does its
             // job resolving dependencies corrrectly.
@@ -82,10 +82,13 @@ class ColzaFactory : public bedrock::AbstractServiceFactory {
     const std::vector<bedrock::Dependency> &getProviderDependencies() override {
         static std::vector<bedrock::Dependency> dependencies;
         if(dependencies.size() == 0) {
-            dependencies.resize(1);
+            dependencies.resize(2);
             dependencies[0].name  = "group";
             dependencies[0].type  = "ssg";
             dependencies[0].flags = BEDROCK_REQUIRED;
+            dependencies[1].name  = "mona_instance";
+            dependencies[1].type  = "mona";
+            dependencies[1].flags = BEDROCK_REQUIRED;
         }
         return dependencies;
     }

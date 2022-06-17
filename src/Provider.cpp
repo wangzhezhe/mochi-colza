@@ -38,7 +38,7 @@ Provider::~Provider() {
     if(self) {
         self->get_engine().pop_finalize_callback(this);
     }
-    spdlog::trace("Provider destroyed");
+    spdlog::trace("Colza provider destroyed");
 }
 
 std::string Provider::getConfig() const {

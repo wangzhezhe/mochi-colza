@@ -1,0 +1,37 @@
+{
+    "mona": [
+        {
+            "name": "colza_mona_instance",
+            "pool": "__primary__"
+        }
+    ],
+    "ssg": [
+        {
+            "name": "colza_ssg_group",
+            "bootstrap": "init",
+            "group_file" : "colza.ssg"
+        }
+    ],
+    "libraries": {
+        "colza": "src/libcolza-bedrock-module.so"
+    },
+    "providers": [
+        {
+            "name": "colza_provider",
+            "type": "colza",
+            "pool": "__primary__",
+            "dependencies": {
+                "group": "colza_ssg_group",
+                "mona_instance": "colza_mona_instance"
+            },
+            "config": {
+                "pipelines": {
+                    "my_dummy_pipeline": {
+                        "library": "examples/pipeline/libcolza-dummy-pipeline.so",
+                        "type": "dummy"
+                    }
+                }
+            }
+        }
+    ]
+}
