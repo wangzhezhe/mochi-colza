@@ -63,8 +63,8 @@ endif ()
 
 # library version set here (e.g. for shared libs).
 set (COLZA_VERSION_MAJOR 0)
-set (COLZA_VERSION_MINOR 1)
-set (COLZA_VERSION_PATCH 3)
+set (COLZA_VERSION_MINOR 2)
+set (COLZA_VERSION_PATCH 0)
 set (COLZA_VERSION
      "${COLZA_VERSION_MAJOR}.${COLZA_VERSION_MINOR}.${COLZA_VERSION_PATCH}")
 
