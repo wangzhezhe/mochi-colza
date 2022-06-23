@@ -1,0 +1,38 @@
+#!/bin/bash
+#SBATCH --qos=debug
+#SBATCH --nodes=2
+#SBATCH --time=20:00
+#SBATCH --licenses=cscratch1
+#SBATCH --constraint=haswell
+
+export BUILDDIR=/global/homes/z/zw241/cworkspace/src/mochi-colza/build
+export SRCDIR=/global/homes/z/zw241/cworkspace/src/mochi-colza
+
+cd $BUILDDIR
+# key envs
+SSGFILE=ssgfile
+PROTOCOL=gni
+
+SEVERCONFIG=$SRCDIR/examples/config.json
+
+SERVERNODE=1
+CLIENTNODE=1
+
+SERVERNUM=2
+CLIENTNUM=4
+
+# 1 nodes for server (16*4=64=2*32)
+srun -C haswell -N $SERVERNODE -n $SERVERNUM -c 8 --cpu_bind=cores --time=20:00 ./examples/distributed/colza-dist-server -a $PROTOCOL -s $SSGFILE -c $SEVERCONFIG -t 1 &> colza_server.log &
+
+#make sure the server load the pipeline
+result=0
+while [ $result -ne $SERVERNUM ]
+do
+    result=$(cat colza_server.log | grep "Server running at" | wc -l)
+    echo "$result server loaded backend"
+    sleep 1  
+done
+
+srun -C haswell -N $CLIENTNODE -n $CLIENTNUM -c 2 --cpu_bind=cores --time=20:00 ./examples/distributed/colza-dist-client -a $PROTOCOL -s $SSGFILE -p dummy -v trace &> colza_client.log
+
+wait
