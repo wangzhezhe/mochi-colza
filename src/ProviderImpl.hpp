@@ -151,8 +151,8 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
         spdlog::trace("[colza:{0}] Registered provider with id {0}", id());
     }
 
-    ~ProviderImpl() {
-        spdlog::trace("[colza:{}] Deregistering provider", id());
+    void onPreFinalize() {
+        spdlog::trace("[colza:{}] Pre-finalizing provider", id());
         m_create_pipeline.deregister();
         m_destroy_pipeline.deregister();
         m_check_pipeline.deregister();
@@ -172,6 +172,10 @@ class ProviderImpl : public tl::provider<ProviderImpl> {
             m_mona_addresses.clear();
         }
         spdlog::trace("[colza:{}]    => done!", id());
+    }
+
+    ~ProviderImpl() {
+        spdlog::trace("[colza:{}] Deregistering provider", id());
     }
 
     void processConfig(const std::string& config) {
